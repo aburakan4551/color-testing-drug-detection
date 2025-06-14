@@ -114,9 +114,14 @@ export function Footer({ lang }: FooterProps) {
             <div className="flex flex-col md:flex-row justify-center items-center space-y-2 md:space-y-0 md:space-x-6 rtl:md:space-x-reverse">
               <div className="flex items-center space-x-2 rtl:space-x-reverse">
                 <div className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-500 to-blue-500"></div>
-                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                <a
+                  href="https://orcid.org/0009-0009-7108-1147"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400 transition-colors cursor-pointer"
+                >
                   {t('footer.developer1')}
-                </span>
+                </a>
               </div>
               <div className="flex items-center space-x-2 rtl:space-x-reverse">
                 <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-green-500"></div>

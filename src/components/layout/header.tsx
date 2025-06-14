@@ -79,6 +79,7 @@ export function Header({ lang }: HeaderProps) {
     { name: t('navigation.home'), href: `/${lang}` },
     { name: t('navigation.tests'), href: `/${lang}/tests` },
     { name: t('navigation.results'), href: `/${lang}/results` },
+    { name: t('navigation.contact'), href: `/${lang}/contact` },
   ];
 
   const isActive = (href: string) => pathname === href;
@@ -126,11 +127,9 @@ export function Header({ lang }: HeaderProps) {
                     : 'text-muted-foreground'
                 }`}
                 onClick={(e) => {
+                  e.preventDefault();
                   console.log('Navigation clicked:', item.href);
-                  // Force navigation if needed
-                  if (item.href !== pathname) {
-                    router.push(item.href);
-                  }
+                  router.push(item.href);
                 }}
               >
                 {item.name}
@@ -231,12 +230,10 @@ export function Header({ lang }: HeaderProps) {
                       : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-800'
                   }`}
                   onClick={(e) => {
+                    e.preventDefault();
                     console.log('Mobile navigation clicked:', item.href);
                     setIsMenuOpen(false);
-                    // Force navigation if needed
-                    if (item.href !== pathname) {
-                      router.push(item.href);
-                    }
+                    router.push(item.href);
                   }}
                 >
                   {item.name}

@@ -359,7 +359,8 @@ export function TestResults({ testId, selectedColor, lang, onBack, onNewTest }: 
             <Button
               onClick={() => {
                 console.log('Perform Another Test clicked');
-                onNewTest();
+                // Navigate to tests page instead of calling onNewTest
+                window.location.href = `/${lang}/tests`;
               }}
               size="lg"
               className="bg-primary hover:bg-primary/90 text-white font-semibold px-8 py-3 text-lg flex items-center space-x-3 rtl:space-x-reverse mx-auto shadow-lg hover:shadow-xl transition-all duration-200"
