@@ -15,7 +15,6 @@ import {
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { notificationService } from '@/lib/notification-service';
-import { notificationService } from '@/lib/notification-service';
 
 interface PasswordRecoveryProps {
   lang: Language;

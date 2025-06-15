@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { AdminDashboard } from '@/components/admin/admin-dashboard';
 import { AdminLogin } from '@/components/admin/admin-login';
+import { PasswordRecovery } from '@/components/admin/password-recovery';
 import {
   validateAdminPassword,
   createAdminSession,
@@ -38,6 +39,7 @@ export function AdminPage({ lang }: AdminPageProps) {
   const [loading, setLoading] = useState(true);
   const [adminPassword, setAdminPassword] = useState('');
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
+  const [showPasswordRecovery, setShowPasswordRecovery] = useState(false);
 
   const { user, isAdmin } = useAuth();
   const router = useRouter();
@@ -131,11 +133,28 @@ export function AdminPage({ lang }: AdminPageProps) {
     toast.success(lang === 'ar' ? 'تم تسجيل الخروج' : 'Logged out successfully');
   };
 
+  const handlePasswordRecoverySuccess = (newPassword: string) => {
+    setShowPasswordRecovery(false);
+    setShowPasswordPrompt(true);
+    toast.success(lang === 'ar' ? 'تم تحديث كلمة المرور بنجاح' : 'Password updated successfully');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
+    );
+  }
+
+  // Show password recovery if requested
+  if (showPasswordRecovery) {
+    return (
+      <PasswordRecovery
+        lang={lang}
+        onBack={() => setShowPasswordRecovery(false)}
+        onRecoverySuccess={handlePasswordRecoverySuccess}
+      />
     );
   }
 
@@ -187,6 +206,14 @@ export function AdminPage({ lang }: AdminPageProps) {
                 className="w-full"
               >
                 {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+              </Button>
+
+              <Button
+                variant="ghost"
+                onClick={() => setShowPasswordRecovery(true)}
+                className="w-full text-primary-600 hover:text-primary-700"
+              >
+                {lang === 'ar' ? 'نسيت كلمة المرور؟' : 'Forgot Password?'}
               </Button>
             </div>
 
