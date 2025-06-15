@@ -57,7 +57,7 @@ export function ContactPage({ lang }: ContactPageProps) {
       titleEn: '',
       email: 'mnalruwaili@moh.gov.sa',
       orcid: 'https://orcid.org/0009-0009-7108-1147',
-      avatar: '🧑‍💻'
+      avatar: ''
     },
     {
       name: 'يوسف مسير العنزي',
@@ -200,7 +200,7 @@ export function ContactPage({ lang }: ContactPageProps) {
               <div className="space-y-6">
                 {developers.map((dev, index) => (
                   <div key={index} className="flex items-start space-x-4 rtl:space-x-reverse p-4 rounded-lg bg-gray-50 dark:bg-gray-700">
-                    <div className="text-3xl">{dev.avatar}</div>
+                    {dev.avatar && <div className="text-3xl">{dev.avatar}</div>}
                     <div className="flex-1">
                       <h3 className="font-semibold text-foreground">
                         {lang === 'ar' ? dev.name : dev.nameEn}
@@ -260,17 +260,7 @@ export function ContactPage({ lang }: ContactPageProps) {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                  <MapPinIcon className="h-5 w-5 text-primary-600" />
-                  <div>
-                    <p className="font-medium text-foreground">
-                      {lang === 'ar' ? 'المؤسسة' : 'Institution'}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {lang === 'ar' ? 'وزارة الصحة - المملكة العربية السعودية' : 'Ministry of Health - Saudi Arabia'}
-                    </p>
-                  </div>
-                </div>
+
               </div>
             </div>
           </div>
