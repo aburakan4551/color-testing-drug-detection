@@ -1,35 +1,34 @@
-import { Metadata } from 'next';
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Language } from '@/types';
-import { AdminPage } from '@/components/pages/admin-page';
-import { getTranslations } from '@/lib/translations';
 
-// Generate static params for supported languages
-export async function generateStaticParams() {
-  return [
-    { lang: 'ar' },
-    { lang: 'en' },
-  ];
-}
-
-interface AdminPageProps {
+interface AdminRedirectProps {
   params: Promise<{ lang: Language }>;
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ lang: Language }>;
-}): Promise<Metadata> {
-  const { lang } = await params;
-  const t = await getTranslations(lang);
+export default function AdminRedirect({ params }: AdminRedirectProps) {
+  const router = useRouter();
 
-  return {
-    title: t('admin.title'),
-    description: t('admin.dashboard'),
-  };
-}
+  useEffect(() => {
+    const redirect = async () => {
+      const { lang } = await params;
+      // إعادة توجيه إلى الرابط الجديد
+      router.replace(`/${lang}/yousef`);
+    };
 
-export default async function Admin({ params }: AdminPageProps) {
-  const { lang } = await params;
-  return <AdminPage lang={lang} />;
+    redirect();
+  }, [params, router]);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+        <p className="text-gray-500">
+          جاري إعادة التوجيه... | Redirecting...
+        </p>
+      </div>
+    </div>
+  );
 }

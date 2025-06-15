@@ -64,14 +64,9 @@ export function AdminPage({ lang }: AdminPageProps) {
       return;
     }
 
-    // Check for secure admin access trigger (only in development)
-    if (process.env.NODE_ENV === 'development') {
-      const hash = window.location.hash;
-      if (hash === '#secure-admin-access') {
-        setShowPasswordPrompt(true);
-        logSecurityEvent('Admin access triggered via URL hash');
-      }
-    }
+    // Show password prompt for admin access
+    setShowPasswordPrompt(true);
+    logSecurityEvent('Admin access via /yousef route');
 
     setLoading(false);
   }, [user, isAdmin]);
@@ -205,7 +200,7 @@ export function AdminPage({ lang }: AdminPageProps) {
                 onClick={() => router.push(`/${lang}`)}
                 className="w-full"
               >
-                {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+                {lang === 'ar' ? 'العودة للرئيسية' : 'Back to Home'}
               </Button>
 
               <Button

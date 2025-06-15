@@ -4,13 +4,15 @@ import { useState, useEffect } from 'react';
 import { Language } from '@/types';
 import { getTranslationsSync } from '@/lib/translations';
 import { Button } from '@/components/ui/button';
-import { 
-  PlusIcon, 
-  PencilIcon, 
+import {
+  PlusIcon,
+  PencilIcon,
   TrashIcon,
   EyeIcon,
   SwatchIcon
 } from '@heroicons/react/24/outline';
+import { adminDataService } from '@/lib/admin-data-service';
+import toast from 'react-hot-toast';
 
 interface ColorResult {
   id: string;
@@ -51,28 +53,23 @@ export function ColorResultsManagement({ lang }: ColorResultsManagementProps) {
 
   const loadData = async () => {
     try {
-      // Load color results
-      const savedResults = localStorage.getItem('color_results_admin');
-      if (savedResults) {
-        setColorResults(JSON.parse(savedResults));
-      } else {
-        const response = await fetch('/data/color-results.json');
-        const data = await response.json();
-        setColorResults(data);
-        localStorage.setItem('color_results_admin', JSON.stringify(data));
-      }
+      // Use the enhanced admin data service
+      const [colorResults, tests] = await Promise.all([
+        adminDataService.getColorResults(),
+        adminDataService.getChemicalTests()
+      ]);
 
-      // Load tests
-      const savedTests = localStorage.getItem('chemical_tests_admin');
-      if (savedTests) {
-        setTests(JSON.parse(savedTests));
-      } else {
-        const response = await fetch('/data/chemical-tests.json');
-        const data = await response.json();
-        setTests(data);
-      }
+      setColorResults(colorResults);
+      setTests(tests);
+
+      console.log('✅ Loaded data:', {
+        colorResults: colorResults.length,
+        tests: tests.length
+      });
+
     } catch (error) {
       console.error('Error loading data:', error);
+      toast.error('خطأ في تحميل البيانات | Error loading data');
     } finally {
       setLoading(false);
     }
@@ -93,25 +90,41 @@ export function ColorResultsManagement({ lang }: ColorResultsManagementProps) {
     setShowModal(true);
   };
 
-  const handleDeleteResult = (resultId: string) => {
+  const handleDeleteResult = async (resultId: string) => {
     if (confirm(lang === 'ar' ? 'هل أنت متأكد من حذف هذه النتيجة؟' : 'Are you sure you want to delete this result?')) {
-      const updatedResults = colorResults.filter(result => result.id !== resultId);
-      saveColorResults(updatedResults);
+      try {
+        await adminDataService.deleteColorResult(resultId);
+        const updatedResults = colorResults.filter(result => result.id !== resultId);
+        setColorResults(updatedResults);
+        toast.success(lang === 'ar' ? 'تم حذف النتيجة' : 'Result deleted');
+      } catch (error) {
+        console.error('Error deleting result:', error);
+        toast.error(lang === 'ar' ? 'خطأ في حذف النتيجة' : 'Error deleting result');
+      }
     }
   };
 
-  const handleSaveResult = (resultData: ColorResult) => {
-    let updatedResults;
-    if (editingResult) {
-      updatedResults = colorResults.map(result => 
-        result.id === editingResult.id ? resultData : result
-      );
-    } else {
-      updatedResults = [...colorResults, resultData];
+  const handleSaveResult = async (resultData: ColorResult) => {
+    try {
+      let updatedResults;
+      if (editingResult) {
+        await adminDataService.updateColorResult(resultData);
+        updatedResults = colorResults.map(result =>
+          result.id === editingResult.id ? resultData : result
+        );
+        toast.success(lang === 'ar' ? 'تم تحديث النتيجة' : 'Result updated');
+      } else {
+        await adminDataService.addColorResult(resultData);
+        updatedResults = [...colorResults, resultData];
+        toast.success(lang === 'ar' ? 'تم إضافة النتيجة' : 'Result added');
+      }
+      setColorResults(updatedResults);
+      setShowModal(false);
+      setEditingResult(null);
+    } catch (error) {
+      console.error('Error saving result:', error);
+      toast.error(lang === 'ar' ? 'خطأ في حفظ النتيجة' : 'Error saving result');
     }
-    saveColorResults(updatedResults);
-    setShowModal(false);
-    setEditingResult(null);
   };
 
   const filteredResults = colorResults.filter(result => {

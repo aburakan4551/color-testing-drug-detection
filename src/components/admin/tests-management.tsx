@@ -4,16 +4,18 @@ import { useState, useEffect } from 'react';
 import { Language } from '@/types';
 import { getTranslationsSync } from '@/lib/translations';
 import { Button } from '@/components/ui/button';
-import { 
-  PlusIcon, 
-  PencilIcon, 
-  TrashIcon, 
+import {
+  PlusIcon,
+  PencilIcon,
+  TrashIcon,
   EyeIcon,
   BeakerIcon,
   ExclamationTriangleIcon,
   ClockIcon,
   TagIcon
 } from '@heroicons/react/24/outline';
+import { adminDataService } from '@/lib/admin-data-service';
+import toast from 'react-hot-toast';
 
 interface ChemicalTest {
   id: string;
@@ -55,19 +57,15 @@ export function TestsManagement({ lang }: TestsManagementProps) {
 
   const loadTests = async () => {
     try {
-      // Load from localStorage or API
-      const savedTests = localStorage.getItem('chemical_tests_admin');
-      if (savedTests) {
-        setTests(JSON.parse(savedTests));
-      } else {
-        // Load initial data from JSON file
-        const response = await fetch('/data/chemical-tests.json');
-        const data = await response.json();
-        setTests(data);
-        localStorage.setItem('chemical_tests_admin', JSON.stringify(data));
-      }
+      // Use the enhanced admin data service
+      const tests = await adminDataService.getChemicalTests();
+      setTests(tests);
+
+      console.log('✅ Loaded tests:', tests.length);
+
     } catch (error) {
       console.error('Error loading tests:', error);
+      toast.error('خطأ في تحميل الاختبارات | Error loading tests');
     } finally {
       setLoading(false);
     }
