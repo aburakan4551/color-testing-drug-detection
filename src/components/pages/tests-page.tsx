@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Language } from '@/types';
 import { getTranslationsSync } from '@/lib/translations';
@@ -28,6 +29,7 @@ export function TestsPage({ lang }: TestsPageProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedSafetyLevel, setSelectedSafetyLevel] = useState<string>('all');
 
+  const router = useRouter();
   const t = getTranslationsSync(lang);
 
   useEffect(() => {
