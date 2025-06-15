@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Language } from '@/types';
 import { getTranslationsSync } from '@/lib/translations';
 import { DataService } from '@/lib/data-service';
@@ -39,6 +40,7 @@ export function TestResults({ testId, selectedColor, lang, onBack, onNewTest }: 
   const [result, setResult] = useState<TestResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
+  const router = useRouter();
   const t = getTranslationsSync(lang);
 
   useEffect(() => {
@@ -358,9 +360,8 @@ export function TestResults({ testId, selectedColor, lang, onBack, onNewTest }: 
           <div className="text-center">
             <Button
               onClick={() => {
-                console.log('Perform Another Test clicked');
-                // Navigate to tests page instead of calling onNewTest
-                window.location.href = `/${lang}/tests`;
+                console.log('Perform Another Test clicked - navigating to tests page');
+                router.push(`/${lang}/tests`);
               }}
               size="lg"
               className="bg-primary hover:bg-primary/90 text-white font-semibold px-8 py-3 text-lg flex items-center space-x-3 rtl:space-x-reverse mx-auto shadow-lg hover:shadow-xl transition-all duration-200"
@@ -400,8 +401,12 @@ export function TestResults({ testId, selectedColor, lang, onBack, onNewTest }: 
             <Button
               variant="ghost"
               onClick={() => {
-                console.log('Back to test clicked');
-                onBack();
+                console.log('Back to color selection clicked');
+                if (onBack) {
+                  onBack();
+                } else {
+                  router.back();
+                }
               }}
               className="flex items-center space-x-2 rtl:space-x-reverse text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
             >

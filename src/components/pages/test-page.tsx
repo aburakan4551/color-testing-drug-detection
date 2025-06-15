@@ -232,7 +232,10 @@ export function TestPage({ lang, testId }: TestPageProps) {
         <div className="mb-8">
           <Button
             variant="ghost"
-            onClick={() => router.push(`/${lang}/tests`)}
+            onClick={() => {
+              console.log('Back button clicked - navigating to tests page');
+              router.push(`/${lang}/tests`);
+            }}
             className="mb-4"
           >
             <ArrowLeftIcon className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 rtl:rotate-180" />
@@ -313,7 +316,10 @@ export function TestPage({ lang, testId }: TestPageProps) {
               testId={testId}
               lang={lang}
               onComplete={() => handleStepComplete('instructions')}
-              onCancel={() => router.push(`/${lang}/tests`)}
+              onCancel={() => {
+                console.log('Test instructions cancelled - navigating to tests page');
+                router.push(`/${lang}/tests`);
+              }}
             />
           )}
 
@@ -336,7 +342,10 @@ export function TestPage({ lang, testId }: TestPageProps) {
               selectedColor={selectedColorResult.hex_code}
               lang={lang}
               onBack={() => setCurrentStep('color-selection')}
-              onNewTest={() => router.push(`/${lang}/tests`)}
+              onNewTest={() => {
+                console.log('New test requested - navigating to tests page');
+                router.push(`/${lang}/tests`);
+              }}
             />
           )}
         </div>

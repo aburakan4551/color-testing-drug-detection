@@ -53,8 +53,8 @@ export function ContactPage({ lang }: ContactPageProps) {
     {
       name: 'محمد نفاع الرويلي',
       nameEn: 'Mohammed Nafa Al-Ruwaili',
-      title: 'المطور الرئيسي',
-      titleEn: 'Lead Developer',
+      title: '',
+      titleEn: '',
       email: 'mnalruwaili@moh.gov.sa',
       orcid: 'https://orcid.org/0009-0009-7108-1147',
       avatar: '🧑‍💻'
@@ -62,8 +62,8 @@ export function ContactPage({ lang }: ContactPageProps) {
     {
       name: 'يوسف مسير العنزي',
       nameEn: 'Youssef Musayyir Al-Anzi',
-      title: 'مطور مشارك',
-      titleEn: 'Co-Developer',
+      title: '',
+      titleEn: '',
       email: 'Yalenzi@moh.gov.sa',
       avatar: '👨‍💻'
     }
@@ -205,9 +205,11 @@ export function ContactPage({ lang }: ContactPageProps) {
                       <h3 className="font-semibold text-foreground">
                         {lang === 'ar' ? dev.name : dev.nameEn}
                       </h3>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        {lang === 'ar' ? dev.title : dev.titleEn}
-                      </p>
+                      {(dev.title || dev.titleEn) && (
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {lang === 'ar' ? dev.title : dev.titleEn}
+                        </p>
+                      )}
                       <div className="flex flex-col space-y-2">
                         <a
                           href={`mailto:${dev.email}`}

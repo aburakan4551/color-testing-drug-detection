@@ -219,7 +219,8 @@ export function TestsPage({ lang }: TestsPageProps) {
                 lang={lang}
                 onClick={(testId) => {
                   // Navigate to test page
-                  window.location.href = `/${lang}/tests/${testId}`;
+                  console.log('Test card clicked, navigating to:', `/${lang}/tests/${testId}`);
+                  router.push(`/${lang}/tests/${testId}`);
                 }}
               />
             ))}

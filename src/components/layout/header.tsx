@@ -103,9 +103,11 @@ export function Header({ lang }: HeaderProps) {
               href={`/${lang}`}
               className="flex items-center space-x-2 rtl:space-x-reverse hover:opacity-80 transition-opacity"
               onClick={(e) => {
+                e.preventDefault();
                 // Handle both logo click and navigation
                 handleLogoClick();
-                console.log('Logo clicked, navigating to home');
+                console.log('Logo clicked, navigating to home:', `/${lang}`);
+                router.push(`/${lang}`);
               }}
             >
               <BeakerIcon className="h-8 w-8 text-primary-600" />
@@ -128,7 +130,7 @@ export function Header({ lang }: HeaderProps) {
                 }`}
                 onClick={(e) => {
                   e.preventDefault();
-                  console.log('Navigation clicked:', item.href);
+                  console.log('Desktop navigation clicked:', item.href, 'Current path:', pathname);
                   router.push(item.href);
                 }}
               >
@@ -231,7 +233,7 @@ export function Header({ lang }: HeaderProps) {
                   }`}
                   onClick={(e) => {
                     e.preventDefault();
-                    console.log('Mobile navigation clicked:', item.href);
+                    console.log('Mobile navigation clicked:', item.href, 'Current path:', pathname);
                     setIsMenuOpen(false);
                     router.push(item.href);
                   }}
