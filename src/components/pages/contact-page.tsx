@@ -57,7 +57,7 @@ export function ContactPage({ lang }: ContactPageProps) {
       titleEn: '',
       email: 'mnalruwaili@moh.gov.sa',
       orcid: 'https://orcid.org/0009-0009-7108-1147',
-      avatar: ''
+      avatar: '👨‍💻'
     },
     {
       name: 'يوسف مسير العنزي',

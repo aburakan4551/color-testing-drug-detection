@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { ReportsSystem } from './reports-system';
 import { DatabaseManagement } from './database-management';
 import { ExcelManagement } from './excel-management';
+import { TestsManagement } from './tests-management';
+import { ColorResultsManagement } from './color-results-management';
 import {
   ChartBarIcon,
   BeakerIcon,
@@ -52,6 +54,8 @@ export function AdminDashboard({ lang }: AdminDashboardProps) {
 
   const tabs = [
     { id: 'dashboard', name: lang === 'ar' ? 'لوحة التحكم' : 'Dashboard', icon: ChartBarIcon },
+    { id: 'tests', name: lang === 'ar' ? 'إدارة الاختبارات' : 'Tests Management', icon: BeakerIcon },
+    { id: 'colors', name: lang === 'ar' ? 'إدارة النتائج اللونية' : 'Color Results', icon: SwatchIcon },
     { id: 'reports', name: lang === 'ar' ? 'التقارير' : 'Reports', icon: DocumentTextIcon },
     { id: 'database', name: lang === 'ar' ? 'قاعدة البيانات' : 'Database', icon: CircleStackIcon },
     { id: 'excel', name: lang === 'ar' ? 'ملفات Excel' : 'Excel Files', icon: TableCellsIcon }
@@ -164,6 +168,10 @@ export function AdminDashboard({ lang }: AdminDashboardProps) {
 
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'tests':
+        return <TestsManagement lang={lang} />;
+      case 'colors':
+        return <ColorResultsManagement lang={lang} />;
       case 'reports':
         return <ReportsSystem lang={lang} />;
       case 'database':
