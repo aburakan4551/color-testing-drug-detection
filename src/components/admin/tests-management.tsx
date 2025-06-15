@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Language } from '@/types';
 import { getTranslationsSync } from '@/lib/translations';
 import { Button } from '@/components/ui/button';
@@ -12,42 +12,34 @@ import {
   BeakerIcon,
   ExclamationTriangleIcon,
   ClockIcon,
-  TagIcon
+  TagIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  ChartBarIcon,
+  SwatchIcon
 } from '@heroicons/react/24/outline';
-import { adminDataService } from '@/lib/admin-data-service';
+import { testDataExtractor, ExtractedTest } from '@/lib/test-data-extractor';
 import toast from 'react-hot-toast';
-
-interface ChemicalTest {
-  id: string;
-  method_name: string;
-  method_name_ar: string;
-  description: string;
-  description_ar: string;
-  category: string;
-  safety_level: string;
-  preparation_time: number;
-  icon: string;
-  color_primary: string;
-  created_at: string;
-  prepare?: string;
-  prepare_ar?: string;
-  test_type?: string;
-  test_number?: string;
-  reference?: string;
-}
 
 interface TestsManagementProps {
   lang: Language;
 }
 
 export function TestsManagement({ lang }: TestsManagementProps) {
-  const [tests, setTests] = useState<ChemicalTest[]>([]);
+  const [tests, setTests] = useState<ExtractedTest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editingTest, setEditingTest] = useState<ChemicalTest | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedSafetyLevel, setSelectedSafetyLevel] = useState<string>('all');
+  const [selectedConfidence, setSelectedConfidence] = useState<string>('all');
+  const [showDetails, setShowDetails] = useState<string | null>(null);
+  const [statistics, setStatistics] = useState({
+    total: 0,
+    basic: 0,
+    advanced: 0,
+    specialized: 0,
+    totalResults: 0,
+    highConfidenceResults: 0
+  });
 
   const t = getTranslationsSync(lang);
 
@@ -57,11 +49,15 @@ export function TestsManagement({ lang }: TestsManagementProps) {
 
   const loadTests = async () => {
     try {
-      // Use the enhanced admin data service
-      const tests = await adminDataService.getChemicalTests();
-      setTests(tests);
+      // Use the test data extractor to get tests from color results
+      const extractedTests = await testDataExtractor.getExtractedTests();
+      const stats = await testDataExtractor.getTestsStatistics();
 
-      console.log('✅ Loaded tests:', tests.length);
+      setTests(extractedTests);
+      setStatistics(stats);
+
+      console.log('✅ Loaded extracted tests:', extractedTests.length);
+      console.log('📊 Statistics:', stats);
 
     } catch (error) {
       console.error('Error loading tests:', error);
@@ -71,66 +67,41 @@ export function TestsManagement({ lang }: TestsManagementProps) {
     }
   };
 
-  const saveTests = (updatedTests: ChemicalTest[]) => {
-    setTests(updatedTests);
-    localStorage.setItem('chemical_tests_admin', JSON.stringify(updatedTests));
+  const handleViewDetails = (testId: string) => {
+    setShowDetails(showDetails === testId ? null : testId);
   };
 
-  const handleAddTest = () => {
-    setEditingTest(null);
-    setShowModal(true);
-  };
-
-  const handleEditTest = (test: ChemicalTest) => {
-    setEditingTest(test);
-    setShowModal(true);
-  };
-
-  const handleDeleteTest = (testId: string) => {
-    if (confirm(lang === 'ar' ? 'هل أنت متأكد من حذف هذا الاختبار؟' : 'Are you sure you want to delete this test?')) {
-      const updatedTests = tests.filter(test => test.id !== testId);
-      saveTests(updatedTests);
+  const handleReloadData = async () => {
+    setLoading(true);
+    try {
+      await testDataExtractor.reloadData();
+      await loadTests();
+      toast.success(lang === 'ar' ? 'تم تحديث البيانات' : 'Data refreshed');
+    } catch (error) {
+      console.error('Error reloading data:', error);
+      toast.error(lang === 'ar' ? 'خطأ في تحديث البيانات' : 'Error refreshing data');
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const handleSaveTest = (testData: ChemicalTest) => {
-    let updatedTests;
-    if (editingTest) {
-      // Update existing test
-      updatedTests = tests.map(test => 
-        test.id === editingTest.id ? testData : test
-      );
-    } else {
-      // Add new test
-      updatedTests = [...tests, testData];
-    }
-    saveTests(updatedTests);
-    setShowModal(false);
-    setEditingTest(null);
   };
 
   const filteredTests = tests.filter(test => {
-    const matchesSearch = searchQuery === '' || 
-      test.method_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      test.method_name_ar.includes(searchQuery) ||
-      test.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      test.description_ar.includes(searchQuery);
-    
-    const matchesCategory = selectedCategory === 'all' || test.category === selectedCategory;
-    const matchesSafety = selectedSafetyLevel === 'all' || test.safety_level === selectedSafetyLevel;
-    
-    return matchesSearch && matchesCategory && matchesSafety;
-  });
+    const matchesSearch = searchQuery === '' ||
+      test.test_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      test.test_name_ar.includes(searchQuery) ||
+      test.test_id.includes(searchQuery.toLowerCase()) ||
+      test.color_results.some(result =>
+        result.possible_substance.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        result.possible_substance_ar.includes(searchQuery)
+      );
 
-  const getSafetyLevelColor = (level: string) => {
-    switch (level) {
-      case 'low': return 'text-green-600 bg-green-50 border-green-200';
-      case 'medium': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-      case 'high': return 'text-orange-600 bg-orange-50 border-orange-200';
-      case 'extreme': return 'text-red-600 bg-red-50 border-red-200';
-      default: return 'text-gray-600 bg-gray-50 border-gray-200';
-    }
-  };
+    const matchesCategory = selectedCategory === 'all' || test.category === selectedCategory;
+
+    const matchesConfidence = selectedConfidence === 'all' ||
+      test.color_results.some(result => result.confidence_level === selectedConfidence);
+
+    return matchesSearch && matchesCategory && matchesConfidence;
+  });
 
   const getCategoryColor = (category: string) => {
     switch (category) {
@@ -139,6 +110,35 @@ export function TestsManagement({ lang }: TestsManagementProps) {
       case 'specialized': return 'text-indigo-600 bg-indigo-50 border-indigo-200';
       default: return 'text-gray-600 bg-gray-50 border-gray-200';
     }
+  };
+
+  const getConfidenceLevelColor = (level: string) => {
+    switch (level) {
+      case 'very_high': return 'text-green-700 bg-green-100 border-green-300';
+      case 'high': return 'text-green-600 bg-green-50 border-green-200';
+      case 'medium': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+      case 'low': return 'text-red-600 bg-red-50 border-red-200';
+      default: return 'text-gray-600 bg-gray-50 border-gray-200';
+    }
+  };
+
+  const getCategoryName = (category: string) => {
+    const names = {
+      basic: lang === 'ar' ? 'أساسي' : 'Basic',
+      advanced: lang === 'ar' ? 'متقدم' : 'Advanced',
+      specialized: lang === 'ar' ? 'متخصص' : 'Specialized'
+    };
+    return names[category as keyof typeof names] || category;
+  };
+
+  const getConfidenceName = (level: string) => {
+    const names = {
+      very_high: lang === 'ar' ? 'عالي جداً' : 'Very High',
+      high: lang === 'ar' ? 'عالي' : 'High',
+      medium: lang === 'ar' ? 'متوسط' : 'Medium',
+      low: lang === 'ar' ? 'منخفض' : 'Low'
+    };
+    return names[level as keyof typeof names] || level;
   };
 
   if (loading) {
@@ -155,37 +155,45 @@ export function TestsManagement({ lang }: TestsManagementProps) {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
         <div>
           <h2 className="text-2xl font-bold text-foreground">
-            {lang === 'ar' ? 'إدارة الاختبارات' : 'Tests Management'}
+            {lang === 'ar' ? 'إدارة الاختبارات الكيميائية' : 'Chemical Tests Management'}
           </h2>
           <p className="text-muted-foreground">
-            {lang === 'ar' 
-              ? 'إدارة وتحرير الاختبارات الكيميائية'
-              : 'Manage and edit chemical tests'
+            {lang === 'ar'
+              ? 'عرض وإدارة الاختبارات المستخرجة من النتائج اللونية'
+              : 'View and manage tests extracted from color results'
             }
           </p>
         </div>
-        <Button onClick={handleAddTest} className="flex items-center space-x-2 rtl:space-x-reverse">
-          <PlusIcon className="h-4 w-4" />
-          <span>{lang === 'ar' ? 'إضافة اختبار جديد' : 'Add New Test'}</span>
-        </Button>
+        <div className="flex items-center space-x-2 rtl:space-x-reverse">
+          <Button
+            onClick={handleReloadData}
+            variant="outline"
+            className="flex items-center space-x-2 rtl:space-x-reverse"
+          >
+            <ChartBarIcon className="h-4 w-4" />
+            <span>{lang === 'ar' ? 'تحديث البيانات' : 'Refresh Data'}</span>
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
+        <div className="relative">
+          <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
             type="text"
-            placeholder={lang === 'ar' ? 'البحث في الاختبارات...' : 'Search tests...'}
+            placeholder={lang === 'ar' ? 'البحث في الاختبارات والمواد...' : 'Search tests and substances...'}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className="w-full pl-10 pr-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
         </div>
-        <div>
+        <div className="relative">
+          <FunnelIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary-500"
+            className="w-full pl-10 pr-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary-500"
           >
             <option value="all">{lang === 'ar' ? 'جميع الفئات' : 'All Categories'}</option>
             <option value="basic">{lang === 'ar' ? 'أساسي' : 'Basic'}</option>
@@ -193,17 +201,18 @@ export function TestsManagement({ lang }: TestsManagementProps) {
             <option value="specialized">{lang === 'ar' ? 'متخصص' : 'Specialized'}</option>
           </select>
         </div>
-        <div>
+        <div className="relative">
+          <SwatchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <select
-            value={selectedSafetyLevel}
-            onChange={(e) => setSelectedSafetyLevel(e.target.value)}
-            className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary-500"
+            value={selectedConfidence}
+            onChange={(e) => setSelectedConfidence(e.target.value)}
+            className="w-full pl-10 pr-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary-500"
           >
-            <option value="all">{lang === 'ar' ? 'جميع مستويات الأمان' : 'All Safety Levels'}</option>
-            <option value="low">{lang === 'ar' ? 'منخفض' : 'Low'}</option>
-            <option value="medium">{lang === 'ar' ? 'متوسط' : 'Medium'}</option>
+            <option value="all">{lang === 'ar' ? 'جميع مستويات الثقة' : 'All Confidence Levels'}</option>
+            <option value="very_high">{lang === 'ar' ? 'عالي جداً' : 'Very High'}</option>
             <option value="high">{lang === 'ar' ? 'عالي' : 'High'}</option>
-            <option value="extreme">{lang === 'ar' ? 'خطر شديد' : 'Extreme'}</option>
+            <option value="medium">{lang === 'ar' ? 'متوسط' : 'Medium'}</option>
+            <option value="low">{lang === 'ar' ? 'منخفض' : 'Low'}</option>
           </select>
         </div>
       </div>
@@ -217,40 +226,34 @@ export function TestsManagement({ lang }: TestsManagementProps) {
               {lang === 'ar' ? 'إجمالي الاختبارات' : 'Total Tests'}
             </span>
           </div>
-          <p className="text-2xl font-bold text-foreground mt-1">{tests.length}</p>
+          <p className="text-2xl font-bold text-foreground mt-1">{statistics.total}</p>
         </div>
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-border">
           <div className="flex items-center space-x-2 rtl:space-x-reverse">
-            <TagIcon className="h-5 w-5 text-blue-600" />
+            <SwatchIcon className="h-5 w-5 text-blue-600" />
             <span className="text-sm font-medium text-muted-foreground">
-              {lang === 'ar' ? 'الأساسية' : 'Basic'}
+              {lang === 'ar' ? 'إجمالي النتائج' : 'Total Results'}
             </span>
           </div>
-          <p className="text-2xl font-bold text-foreground mt-1">
-            {tests.filter(t => t.category === 'basic').length}
-          </p>
+          <p className="text-2xl font-bold text-foreground mt-1">{statistics.totalResults}</p>
+        </div>
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-border">
+          <div className="flex items-center space-x-2 rtl:space-x-reverse">
+            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+            <span className="text-sm font-medium text-muted-foreground">
+              {lang === 'ar' ? 'ثقة عالية' : 'High Confidence'}
+            </span>
+          </div>
+          <p className="text-2xl font-bold text-foreground mt-1">{statistics.highConfidenceResults}</p>
         </div>
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-border">
           <div className="flex items-center space-x-2 rtl:space-x-reverse">
             <TagIcon className="h-5 w-5 text-purple-600" />
             <span className="text-sm font-medium text-muted-foreground">
-              {lang === 'ar' ? 'المتقدمة' : 'Advanced'}
+              {lang === 'ar' ? 'متخصصة' : 'Specialized'}
             </span>
           </div>
-          <p className="text-2xl font-bold text-foreground mt-1">
-            {tests.filter(t => t.category === 'advanced').length}
-          </p>
-        </div>
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-border">
-          <div className="flex items-center space-x-2 rtl:space-x-reverse">
-            <ExclamationTriangleIcon className="h-5 w-5 text-red-600" />
-            <span className="text-sm font-medium text-muted-foreground">
-              {lang === 'ar' ? 'خطر شديد' : 'Extreme Risk'}
-            </span>
-          </div>
-          <p className="text-2xl font-bold text-foreground mt-1">
-            {tests.filter(t => t.safety_level === 'extreme').length}
-          </p>
+          <p className="text-2xl font-bold text-foreground mt-1">{statistics.specialized}</p>
         </div>
       </div>
 
@@ -267,10 +270,10 @@ export function TestsManagement({ lang }: TestsManagementProps) {
                   {lang === 'ar' ? 'الفئة' : 'Category'}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  {lang === 'ar' ? 'مستوى الأمان' : 'Safety Level'}
+                  {lang === 'ar' ? 'النتائج' : 'Results'}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  {lang === 'ar' ? 'وقت التحضير' : 'Prep Time'}
+                  {lang === 'ar' ? 'الثقة العالية' : 'High Confidence'}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   {lang === 'ar' ? 'الإجراءات' : 'Actions'}
@@ -279,401 +282,114 @@ export function TestsManagement({ lang }: TestsManagementProps) {
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {filteredTests.map((test) => (
-                <tr key={test.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                      <div 
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: test.color_primary }}
-                      ></div>
-                      <div>
-                        <div className="text-sm font-medium text-foreground">
-                          {lang === 'ar' ? test.method_name_ar : test.method_name}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {lang === 'ar' ? test.description_ar : test.description}
+                <React.Fragment key={test.test_id}>
+                  <tr className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                        <BeakerIcon className="h-5 w-5 text-primary-600" />
+                        <div>
+                          <div className="text-sm font-medium text-foreground">
+                            {lang === 'ar' ? test.test_name_ar : test.test_name}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {test.test_id}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getCategoryColor(test.category)}`}>
-                      {lang === 'ar' 
-                        ? (test.category === 'basic' ? 'أساسي' : test.category === 'advanced' ? 'متقدم' : 'متخصص')
-                        : test.category
-                      }
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getSafetyLevelColor(test.safety_level)}`}>
-                      {lang === 'ar' 
-                        ? (test.safety_level === 'low' ? 'منخفض' : 
-                           test.safety_level === 'medium' ? 'متوسط' : 
-                           test.safety_level === 'high' ? 'عالي' : 'خطر شديد')
-                        : test.safety_level
-                      }
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center space-x-1 rtl:space-x-reverse text-sm text-muted-foreground">
-                      <ClockIcon className="h-4 w-4" />
-                      <span>{test.preparation_time} {lang === 'ar' ? 'دقيقة' : 'min'}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditTest(test)}
-                        className="text-blue-600 hover:text-blue-700"
-                      >
-                        <PencilIcon className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteTest(test.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getCategoryColor(test.category)}`}>
+                        {getCategoryName(test.category)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                        <span className="text-sm font-medium text-foreground">{test.total_results}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {lang === 'ar' ? 'نتيجة' : 'results'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                        <span className="text-sm font-medium text-foreground">{test.high_confidence_results}</span>
+                        <span className="text-xs text-muted-foreground">
+                          / {test.total_results}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewDetails(test.test_id)}
+                          className="text-blue-600 hover:text-blue-700"
+                        >
+                          <EyeIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+
+                  {/* Details Row */}
+                  {showDetails === test.test_id && (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-4 bg-gray-50 dark:bg-gray-700">
+                        <div className="space-y-4">
+                          <h4 className="text-sm font-medium text-foreground">
+                            {lang === 'ar' ? 'النتائج اللونية:' : 'Color Results:'}
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {test.color_results.map((result, index) => (
+                              <div key={index} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-border">
+                                <div className="flex items-center space-x-2 rtl:space-x-reverse mb-2">
+                                  <div
+                                    className="w-4 h-4 rounded-full border border-gray-300"
+                                    style={{ backgroundColor: result.color_hex }}
+                                  ></div>
+                                  <span className="text-sm font-medium text-foreground">
+                                    {lang === 'ar' ? result.color_result_ar : result.color_result}
+                                  </span>
+                                </div>
+                                <div className="text-xs text-muted-foreground mb-1">
+                                  {lang === 'ar' ? result.possible_substance_ar : result.possible_substance}
+                                </div>
+                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getConfidenceLevelColor(result.confidence_level)}`}>
+                                  {getConfidenceName(result.confidence_level)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               ))}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Test Modal */}
-      {showModal && (
-        <TestModal
-          lang={lang}
-          test={editingTest}
-          onSave={handleSaveTest}
-          onClose={() => {
-            setShowModal(false);
-            setEditingTest(null);
-          }}
-        />
+      {/* Empty State */}
+      {filteredTests.length === 0 && !loading && (
+        <div className="text-center py-12">
+          <BeakerIcon className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">
+            {lang === 'ar' ? 'لا توجد اختبارات' : 'No tests found'}
+          </h3>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            {lang === 'ar'
+              ? 'لم يتم العثور على اختبارات تطابق معايير البحث'
+              : 'No tests match the search criteria'
+            }
+          </p>
+        </div>
       )}
     </div>
   );
 }
 
-// Test Modal Component
-interface TestModalProps {
-  lang: Language;
-  test: ChemicalTest | null;
-  onSave: (test: ChemicalTest) => void;
-  onClose: () => void;
-}
 
-function TestModal({ lang, test, onSave, onClose }: TestModalProps) {
-  const [formData, setFormData] = useState<ChemicalTest>({
-    id: test?.id || '',
-    method_name: test?.method_name || '',
-    method_name_ar: test?.method_name_ar || '',
-    description: test?.description || '',
-    description_ar: test?.description_ar || '',
-    category: test?.category || 'basic',
-    safety_level: test?.safety_level || 'medium',
-    preparation_time: test?.preparation_time || 5,
-    icon: test?.icon || 'BeakerIcon',
-    color_primary: test?.color_primary || '#8B5CF6',
-    created_at: test?.created_at || new Date().toISOString(),
-    prepare: test?.prepare || '',
-    prepare_ar: test?.prepare_ar || '',
-    test_type: test?.test_type || '',
-    test_number: test?.test_number || '',
-    reference: test?.reference || ''
-  });
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: name === 'preparation_time' ? parseInt(value) || 0 : value
-    }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Generate ID if new test
-    if (!test) {
-      const id = formData.method_name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-test';
-      formData.id = id;
-    }
-
-    onSave(formData);
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-semibold text-foreground">
-              {test
-                ? (lang === 'ar' ? 'تحرير الاختبار' : 'Edit Test')
-                : (lang === 'ar' ? 'إضافة اختبار جديد' : 'Add New Test')
-              }
-            </h3>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Basic Information */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  {lang === 'ar' ? 'اسم الاختبار (إنجليزي)' : 'Test Name (English)'}
-                </label>
-                <input
-                  type="text"
-                  name="method_name"
-                  value={formData.method_name}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  {lang === 'ar' ? 'اسم الاختبار (عربي)' : 'Test Name (Arabic)'}
-                </label>
-                <input
-                  type="text"
-                  name="method_name_ar"
-                  value={formData.method_name_ar}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
-            </div>
-
-            {/* Description */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  {lang === 'ar' ? 'الوصف (إنجليزي)' : 'Description (English)'}
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  required
-                  rows={3}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  {lang === 'ar' ? 'الوصف (عربي)' : 'Description (Arabic)'}
-                </label>
-                <textarea
-                  name="description_ar"
-                  value={formData.description_ar}
-                  onChange={handleInputChange}
-                  required
-                  rows={3}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
-            </div>
-
-            {/* Category and Safety */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  {lang === 'ar' ? 'الفئة' : 'Category'}
-                </label>
-                <select
-                  name="category"
-                  value={formData.category}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary-500"
-                >
-                  <option value="basic">{lang === 'ar' ? 'أساسي' : 'Basic'}</option>
-                  <option value="advanced">{lang === 'ar' ? 'متقدم' : 'Advanced'}</option>
-                  <option value="specialized">{lang === 'ar' ? 'متخصص' : 'Specialized'}</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  {lang === 'ar' ? 'مستوى الأمان' : 'Safety Level'}
-                </label>
-                <select
-                  name="safety_level"
-                  value={formData.safety_level}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary-500"
-                >
-                  <option value="low">{lang === 'ar' ? 'منخفض' : 'Low'}</option>
-                  <option value="medium">{lang === 'ar' ? 'متوسط' : 'Medium'}</option>
-                  <option value="high">{lang === 'ar' ? 'عالي' : 'High'}</option>
-                  <option value="extreme">{lang === 'ar' ? 'خطر شديد' : 'Extreme'}</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  {lang === 'ar' ? 'وقت التحضير (دقيقة)' : 'Preparation Time (minutes)'}
-                </label>
-                <input
-                  type="number"
-                  name="preparation_time"
-                  value={formData.preparation_time}
-                  onChange={handleInputChange}
-                  min="1"
-                  max="60"
-                  required
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
-            </div>
-
-            {/* Color and Icon */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  {lang === 'ar' ? 'اللون الأساسي' : 'Primary Color'}
-                </label>
-                <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                  <input
-                    type="color"
-                    name="color_primary"
-                    value={formData.color_primary}
-                    onChange={handleInputChange}
-                    className="w-12 h-10 border border-border rounded cursor-pointer"
-                  />
-                  <input
-                    type="text"
-                    name="color_primary"
-                    value={formData.color_primary}
-                    onChange={handleInputChange}
-                    className="flex-1 px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  {lang === 'ar' ? 'الأيقونة' : 'Icon'}
-                </label>
-                <select
-                  name="icon"
-                  value={formData.icon}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary-500"
-                >
-                  <option value="BeakerIcon">BeakerIcon</option>
-                  <option value="ExclamationTriangleIcon">ExclamationTriangleIcon</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Preparation Instructions */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  {lang === 'ar' ? 'طريقة التحضير (إنجليزي)' : 'Preparation Method (English)'}
-                </label>
-                <textarea
-                  name="prepare"
-                  value={formData.prepare}
-                  onChange={handleInputChange}
-                  rows={5}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="1. Step one...\n2. Step two..."
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  {lang === 'ar' ? 'طريقة التحضير (عربي)' : 'Preparation Method (Arabic)'}
-                </label>
-                <textarea
-                  name="prepare_ar"
-                  value={formData.prepare_ar}
-                  onChange={handleInputChange}
-                  rows={5}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="1. الخطوة الأولى...\n2. الخطوة الثانية..."
-                />
-              </div>
-            </div>
-
-            {/* Additional Information */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  {lang === 'ar' ? 'نوع الاختبار' : 'Test Type'}
-                </label>
-                <input
-                  type="text"
-                  name="test_type"
-                  value={formData.test_type}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="F/L, L, etc."
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  {lang === 'ar' ? 'رقم الاختبار' : 'Test Number'}
-                </label>
-                <input
-                  type="text"
-                  name="test_number"
-                  value={formData.test_number}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="Test 1, Test 21, etc."
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  {lang === 'ar' ? 'المرجع' : 'Reference'}
-                </label>
-                <input
-                  type="text"
-                  name="reference"
-                  value={formData.reference}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="Author, Journal, Year..."
-                />
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex justify-end space-x-4 rtl:space-x-reverse pt-6 border-t border-border">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-              >
-                {lang === 'ar' ? 'إلغاء' : 'Cancel'}
-              </Button>
-              <Button type="submit">
-                {test
-                  ? (lang === 'ar' ? 'تحديث الاختبار' : 'Update Test')
-                  : (lang === 'ar' ? 'إضافة الاختبار' : 'Add Test')
-                }
-              </Button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-}
