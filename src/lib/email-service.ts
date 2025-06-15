@@ -1,10 +1,11 @@
-// خدمة الإيميل الحقيقية باستخدام EmailJS
-// Real Email Service using EmailJS
+// خدمة الإيميل البديلة بدون تبعيات خارجية
+// Alternative Email Service without external dependencies
 
-interface EmailJSConfig {
-  serviceId: string;
-  templateId: string;
-  publicKey: string;
+interface EmailConfig {
+  to: string;
+  subject: string;
+  body: string;
+  isHtml?: boolean;
 }
 
 interface EmailData {
@@ -18,14 +19,13 @@ interface EmailData {
 
 class EmailService {
   private static instance: EmailService;
-  private emailJS: any = null;
   private isInitialized = false;
 
-  // إعدادات EmailJS (يجب تكوينها في بيئة الإنتاج)
-  private config: EmailJSConfig = {
-    serviceId: 'service_admin_recovery', // يجب إنشاؤه في EmailJS
-    templateId: 'template_verification', // يجب إنشاؤه في EmailJS
-    publicKey: 'YOUR_EMAILJS_PUBLIC_KEY' // يجب الحصول عليه من EmailJS
+  // إعدادات الإيميل (يمكن تكوينها لاحقاً)
+  private config = {
+    serviceId: 'service_admin_recovery',
+    templateId: 'template_verification',
+    publicKey: 'YOUR_EMAILJS_PUBLIC_KEY'
   };
 
   private constructor() {}
@@ -38,30 +38,24 @@ class EmailService {
   }
 
   /**
-   * تهيئة خدمة EmailJS
-   * Initialize EmailJS service
+   * تهيئة خدمة الإيميل البديلة
+   * Initialize alternative email service
    */
   async initialize(): Promise<boolean> {
     try {
-      if (typeof window === 'undefined') {
-        // Server-side rendering
-        return false;
+      // في بيئة التطوير، نستخدم محاكاة
+      if (process.env.NODE_ENV === 'development') {
+        this.isInitialized = true;
+        console.log('📧 Email service initialized in development mode');
+        return true;
       }
 
-      // تحميل EmailJS ديناميكياً
-      if (!this.emailJS) {
-        const emailjs = await import('@emailjs/browser');
-        this.emailJS = emailjs;
-      }
-
-      // تهيئة EmailJS
-      this.emailJS.init(this.config.publicKey);
+      // في بيئة الإنتاج، يمكن إضافة خدمة حقيقية لاحقاً
       this.isInitialized = true;
-      
-      console.log('📧 EmailJS initialized successfully');
+      console.log('📧 Email service initialized');
       return true;
     } catch (error) {
-      console.error('Failed to initialize EmailJS:', error);
+      console.error('Failed to initialize email service:', error);
       return false;
     }
   }
@@ -84,31 +78,22 @@ class EmailService {
         }
       }
 
-      // إعداد بيانات الإيميل
-      const emailData: EmailData = {
-        to_email: email,
-        to_name: lang === 'ar' ? 'مدير النظام' : 'System Administrator',
-        subject: lang === 'ar' 
-          ? 'رمز التحقق - استعادة كلمة مرور الأدمن'
-          : 'Verification Code - Admin Password Recovery',
-        verification_code: code,
-        message: this.generateEmailMessage(code, lang),
-        language: lang
-      };
+      // في بيئة التطوير، نستخدم محاكاة
+      if (process.env.NODE_ENV === 'development') {
+        console.log('📧 [DEV] Simulating email send to:', email);
+        console.log('📧 [DEV] Verification code:', code);
 
-      // إرسال الإيميل
-      const result = await this.emailJS.send(
-        this.config.serviceId,
-        this.config.templateId,
-        emailData
-      );
+        // محاكاة تأخير الشبكة
+        await new Promise(resolve => setTimeout(resolve, 1500));
 
-      console.log('📧 Email sent successfully:', result.text);
-      
-      return {
-        success: true,
-        messageId: result.text
-      };
+        return {
+          success: true,
+          messageId: `dev_email_${Date.now()}`
+        };
+      }
+
+      // في بيئة الإنتاج، استخدم الطريقة البديلة
+      return await this.fallbackEmailSend(email, code, lang);
 
     } catch (error) {
       console.error('Email sending failed:', error);
@@ -215,10 +200,10 @@ Ministry of Health - Saudi Arabia
   }
 
   /**
-   * تكوين إعدادات EmailJS
-   * Configure EmailJS settings
+   * تكوين إعدادات الإيميل
+   * Configure email settings
    */
-  configure(config: Partial<EmailJSConfig>): void {
+  configure(config: Partial<typeof this.config>): void {
     this.config = { ...this.config, ...config };
     this.isInitialized = false; // إعادة التهيئة مطلوبة
   }
@@ -226,27 +211,19 @@ Ministry of Health - Saudi Arabia
 
 export const emailService = EmailService.getInstance();
 
-// إعدادات EmailJS للإنتاج
-// EmailJS configuration for production
-export const EMAILJS_CONFIG = {
-  // يجب الحصول على هذه القيم من https://www.emailjs.com/
+// إعدادات الإيميل للإنتاج
+// Email configuration for production
+export const EMAIL_CONFIG = {
+  // يمكن إضافة إعدادات خدمة الإيميل هنا لاحقاً
   SERVICE_ID: 'service_admin_recovery',
   TEMPLATE_ID: 'template_verification',
-  PUBLIC_KEY: 'YOUR_EMAILJS_PUBLIC_KEY',
-  
-  // قالب الإيميل المطلوب في EmailJS:
-  // Required email template in EmailJS:
-  /*
-  Subject: {{subject}}
-  
-  To: {{to_name}} <{{to_email}}>
-  
-  {{message}}
-  
-  Verification Code: {{verification_code}}
-  
-  Language: {{language}}
-  */
+  PUBLIC_KEY: 'YOUR_EMAIL_SERVICE_KEY',
+
+  // ملاحظة: يمكن إضافة خدمات إيميل حقيقية مثل:
+  // - EmailJS (يتطلب @emailjs/browser)
+  // - SendGrid (يتطلب @sendgrid/mail)
+  // - Nodemailer (للخوادم)
+  // - AWS SES (يتطلب aws-sdk)
 };
 
 // دليل الإعداد
@@ -255,49 +232,49 @@ export const SETUP_GUIDE = {
   ar: `
 إعداد خدمة الإيميل:
 
-1. إنشاء حساب في EmailJS:
-   - اذهب إلى https://www.emailjs.com/
-   - أنشئ حساب جديد
+الحالة الحالية: النظام يعمل في وضع المحاكاة للتطوير
 
-2. إعداد الخدمة:
-   - أضف خدمة إيميل (Gmail, Outlook, إلخ)
-   - احصل على Service ID
+لإضافة خدمة إيميل حقيقية:
 
-3. إنشاء القالب:
-   - أنشئ قالب جديد
-   - استخدم المتغيرات: {{to_email}}, {{subject}}, {{message}}, {{verification_code}}
-   - احصل على Template ID
+1. اختيار خدمة الإيميل:
+   - EmailJS (للمتصفحات): npm install @emailjs/browser
+   - SendGrid (للخوادم): npm install @sendgrid/mail
+   - AWS SES: npm install aws-sdk
+   - Nodemailer: npm install nodemailer
 
-4. الحصول على Public Key:
-   - اذهب إلى Account > API Keys
-   - انسخ Public Key
+2. تحديث email-service.ts:
+   - إضافة التبعية المطلوبة
+   - تكوين الخدمة المختارة
+   - تحديث دالة sendVerificationCode
 
-5. تحديث الإعدادات:
-   - حدث EMAILJS_CONFIG في هذا الملف
-   - أو استخدم متغيرات البيئة
+3. إعداد المتغيرات:
+   - إضافة مفاتيح API في متغيرات البيئة
+   - تحديث EMAIL_CONFIG
+
+ملاحظة: النظام الحالي يعمل بدون تبعيات خارجية
   `,
   en: `
 Email Service Setup:
 
-1. Create EmailJS Account:
-   - Go to https://www.emailjs.com/
-   - Create a new account
+Current Status: System works in simulation mode for development
 
-2. Setup Service:
-   - Add email service (Gmail, Outlook, etc.)
-   - Get Service ID
+To add real email service:
 
-3. Create Template:
-   - Create new template
-   - Use variables: {{to_email}}, {{subject}}, {{message}}, {{verification_code}}
-   - Get Template ID
+1. Choose Email Service:
+   - EmailJS (for browsers): npm install @emailjs/browser
+   - SendGrid (for servers): npm install @sendgrid/mail
+   - AWS SES: npm install aws-sdk
+   - Nodemailer: npm install nodemailer
 
-4. Get Public Key:
-   - Go to Account > API Keys
-   - Copy Public Key
+2. Update email-service.ts:
+   - Add required dependency
+   - Configure chosen service
+   - Update sendVerificationCode function
 
-5. Update Configuration:
-   - Update EMAILJS_CONFIG in this file
-   - Or use environment variables
+3. Setup Variables:
+   - Add API keys in environment variables
+   - Update EMAIL_CONFIG
+
+Note: Current system works without external dependencies
   `
 };
