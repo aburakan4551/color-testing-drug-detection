@@ -62,13 +62,13 @@ export function GlobalImageAnalyzer({ isOpen, onClose, onColorSelected, lang }: 
 
   // Handle analysis timeout
   const handleAnalysisTimeout = useCallback(() => {
-    console.error('Image analysis timeout after 10 seconds');
+    console.error('Image analysis timeout after 30 seconds');
     setIsAnalyzing(false);
     setAnalysisProgress('');
     setError(
       lang === 'ar'
-        ? 'انتهت مهلة تحليل الصورة. يرجى المحاولة بصورة أخرى أو استخدام الاختيار اليدوي.'
-        : 'Image analysis timeout. Please try another image or use manual color selection.'
+        ? 'انتهت مهلة تحليل الصورة. يرجى المحاولة بصورة أصغر أو استخدام الاختيار اليدوي.'
+        : 'Image analysis timeout. Please try with a smaller image or use manual color selection.'
     );
     clearAnalysisTimeout();
   }, [lang, clearAnalysisTimeout]);
@@ -103,8 +103,8 @@ export function GlobalImageAnalyzer({ isOpen, onClose, onColorSelected, lang }: 
     setError(null);
     setAnalysisProgress(lang === 'ar' ? 'جاري تحميل الصورة...' : 'Loading image...');
 
-    // Set timeout for analysis
-    timeoutRef.current = setTimeout(handleAnalysisTimeout, 10000); // 10 seconds timeout
+    // Set timeout for analysis (increased to 30 seconds)
+    timeoutRef.current = setTimeout(handleAnalysisTimeout, 30000); // 30 seconds timeout
 
     const img = new Image();
 

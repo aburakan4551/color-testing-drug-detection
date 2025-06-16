@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Language } from '@/types';
-import { getTranslationsSync } from '@/lib/translations';
+
 import { DataService, ChemicalTest, ColorResult as DataServiceColorResult, TestInstruction, TestSession } from '@/lib/data-service';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -86,7 +86,6 @@ export function TestPage({ lang, testId }: TestPageProps) {
   const [notes, setNotes] = useState('');
 
   const router = useRouter();
-  const t = getTranslationsSync(lang);
 
   useEffect(() => {
     const loadTestData = async () => {
@@ -94,7 +93,7 @@ export function TestPage({ lang, testId }: TestPageProps) {
         // Load test data
         const testData = DataService.getChemicalTestById(testId);
         if (!testData) {
-          toast.error(t('common.error'));
+          toast.error(lang === 'ar' ? 'خطأ في تحميل البيانات' : 'Error loading data');
           router.push(`/${lang}/tests`);
           return;
         }
@@ -112,14 +111,14 @@ export function TestPage({ lang, testId }: TestPageProps) {
 
       } catch (error) {
         console.error('Error loading test data:', error);
-        toast.error(t('common.error'));
+        toast.error(lang === 'ar' ? 'خطأ في تحميل البيانات' : 'Error loading data');
       } finally {
         setLoading(false);
       }
     };
 
     loadTestData();
-  }, [testId, lang, router, t]);
+  }, [testId, lang, router]);
 
   const handleStepComplete = (step: TestStep) => {
     switch (step) {
@@ -139,7 +138,7 @@ export function TestPage({ lang, testId }: TestPageProps) {
 
             if (result) {
               setCurrentStep('results');
-              toast.success(t('notifications.test_completed'));
+              toast.success(lang === 'ar' ? 'تم إكمال الاختبار بنجاح' : 'Test completed successfully');
             } else {
               // If DataService fails, still proceed to results
               setCurrentStep('results');
@@ -179,11 +178,11 @@ export function TestPage({ lang, testId }: TestPageProps) {
   const getStepTitle = (step: TestStep) => {
     switch (step) {
       case 'instructions':
-        return t('test_process.step_titles.step1');
+        return lang === 'ar' ? 'تعليمات السلامة' : 'Safety Instructions';
       case 'color-selection':
-        return t('test_process.step_titles.step3');
+        return lang === 'ar' ? 'اختيار اللون المُلاحظ' : 'Select Observed Color';
       case 'results':
-        return t('test_process.step_titles.step4');
+        return lang === 'ar' ? 'النتائج' : 'Results';
     }
   };
 
@@ -211,10 +210,10 @@ export function TestPage({ lang, testId }: TestPageProps) {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">
-            {t('common.error')}
+            {lang === 'ar' ? 'خطأ' : 'Error'}
           </h1>
           <Button onClick={() => router.push(`/${lang}/tests`)}>
-            {t('common.back')}
+            {lang === 'ar' ? 'العودة' : 'Back'}
           </Button>
         </div>
       </div>
@@ -239,7 +238,7 @@ export function TestPage({ lang, testId }: TestPageProps) {
             className="mb-4"
           >
             <ArrowLeftIcon className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 rtl:rotate-180" />
-            {t('common.back')}
+            {lang === 'ar' ? 'العودة' : 'Back'}
           </Button>
 
           <div className="text-center">
@@ -264,11 +263,13 @@ export function TestPage({ lang, testId }: TestPageProps) {
             <div className="flex items-center justify-center space-x-4 rtl:space-x-reverse text-sm text-muted-foreground">
               <div className="flex items-center">
                 <ClockIcon className="h-4 w-4 mr-1 rtl:ml-1 rtl:mr-0" />
-                {test.preparation_time} {t('tests.minutes')}
+                {test.preparation_time} {lang === 'ar' ? 'دقيقة' : 'minutes'}
               </div>
               <div className="flex items-center">
                 <ExclamationTriangleIcon className="h-4 w-4 mr-1 rtl:ml-1 rtl:mr-0" />
-                {t(`tests.safety_levels.${test.safety_level}`)}
+                {test.safety_level === 'high' ? (lang === 'ar' ? 'عالي' : 'High') :
+                 test.safety_level === 'medium' ? (lang === 'ar' ? 'متوسط' : 'Medium') :
+                 (lang === 'ar' ? 'منخفض' : 'Low')}
               </div>
             </div>
           </div>

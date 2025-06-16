@@ -38,6 +38,7 @@ export function ImageColorAnalyzer({ lang, onColorDetected, onClose, testId }: I
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const t = getTranslationsSync(lang);
 
@@ -66,28 +67,75 @@ export function ImageColorAnalyzer({ lang, onColorDetected, onClose, testId }: I
   // Analyze image for colors
   const analyzeImage = useCallback((imageSrc: string) => {
     setIsAnalyzing(true);
+    setError(null);
+
+    // Set timeout for analysis (30 seconds)
+    timeoutRef.current = setTimeout(() => {
+      console.error('Image analysis timeout after 30 seconds');
+      setIsAnalyzing(false);
+      setError(
+        lang === 'ar'
+          ? 'انتهت مهلة تحليل الصورة. يرجى المحاولة بصورة أصغر.'
+          : 'Image analysis timeout. Please try with a smaller image.'
+      );
+    }, 30000);
+
     const img = new Image();
     img.onload = () => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
+      try {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
 
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
 
-      // Set canvas size
-      canvas.width = img.width;
-      canvas.height = img.height;
-      
-      // Draw image
-      ctx.drawImage(img, 0, 0);
-      
-      // Extract dominant colors
-      const colors = extractDominantColors(ctx, img.width, img.height);
-      setDetectedColors(colors);
-      setIsAnalyzing(false);
+        // Set canvas size
+        canvas.width = img.width;
+        canvas.height = img.height;
+
+        // Draw image
+        ctx.drawImage(img, 0, 0);
+
+        // Extract dominant colors
+        const colors = extractDominantColors(ctx, img.width, img.height);
+        setDetectedColors(colors);
+        setIsAnalyzing(false);
+
+        // Clear timeout
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
+      } catch (error) {
+        console.error('Error during image analysis:', error);
+        setIsAnalyzing(false);
+        setError(
+          lang === 'ar'
+            ? 'فشل في معالجة الصورة. يرجى المحاولة بصورة أخرى.'
+            : 'Failed to process image. Please try another image.'
+        );
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
+      }
     };
+
+    img.onerror = () => {
+      setIsAnalyzing(false);
+      setError(
+        lang === 'ar'
+          ? 'فشل في تحميل الصورة. يرجى التأكد من صحة الملف.'
+          : 'Failed to load image. Please check the file is valid.'
+      );
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    };
+
     img.src = imageSrc;
-  }, []);
+  }, [lang]);
 
   // Extract dominant colors from image
   const extractDominantColors = (ctx: CanvasRenderingContext2D, width: number, height: number): DetectedColor[] => {

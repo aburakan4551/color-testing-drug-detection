@@ -18,7 +18,7 @@ import {
   ChartBarIcon,
   SwatchIcon
 } from '@heroicons/react/24/outline';
-import { testDataExtractor, ExtractedTest } from '@/lib/test-data-extractor';
+import { databaseColorTestService, GroupedTest } from '@/lib/database-color-test-service';
 import toast from 'react-hot-toast';
 
 interface TestsManagementProps {
@@ -26,19 +26,16 @@ interface TestsManagementProps {
 }
 
 export function TestsManagement({ lang }: TestsManagementProps) {
-  const [tests, setTests] = useState<ExtractedTest[]>([]);
+  const [tests, setTests] = useState<GroupedTest[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedConfidence, setSelectedConfidence] = useState<string>('all');
+  const [selectedTestType, setSelectedTestType] = useState<string>('all');
   const [showDetails, setShowDetails] = useState<string | null>(null);
   const [statistics, setStatistics] = useState({
-    total: 0,
-    basic: 0,
-    advanced: 0,
-    specialized: 0,
-    totalResults: 0,
-    highConfidenceResults: 0
+    total_tests: 0,
+    total_results: 0,
+    unique_substances: 0,
+    unique_colors: 0
   });
 
   const t = getTranslationsSync(lang);
@@ -49,14 +46,14 @@ export function TestsManagement({ lang }: TestsManagementProps) {
 
   const loadTests = async () => {
     try {
-      // Use the test data extractor to get tests from color results
-      const extractedTests = await testDataExtractor.getExtractedTests();
-      const stats = await testDataExtractor.getTestsStatistics();
+      // Use the database color test service to get tests from DatabaseColorTest.json
+      const groupedTests = await databaseColorTestService.getGroupedTests();
+      const stats = await databaseColorTestService.getTestsStatistics();
 
-      setTests(extractedTests);
+      setTests(groupedTests);
       setStatistics(stats);
 
-      console.log('✅ Loaded extracted tests:', extractedTests.length);
+      console.log('✅ Loaded database color tests:', groupedTests.length);
       console.log('📊 Statistics:', stats);
 
     } catch (error) {
@@ -67,14 +64,14 @@ export function TestsManagement({ lang }: TestsManagementProps) {
     }
   };
 
-  const handleViewDetails = (testId: string) => {
-    setShowDetails(showDetails === testId ? null : testId);
+  const handleViewDetails = (testName: string) => {
+    setShowDetails(showDetails === testName ? null : testName);
   };
 
   const handleReloadData = async () => {
     setLoading(true);
     try {
-      await testDataExtractor.reloadData();
+      await databaseColorTestService.reloadData();
       await loadTests();
       toast.success(lang === 'ar' ? 'تم تحديث البيانات' : 'Data refreshed');
     } catch (error) {
@@ -87,59 +84,21 @@ export function TestsManagement({ lang }: TestsManagementProps) {
 
   const filteredTests = tests.filter(test => {
     const matchesSearch = searchQuery === '' ||
-      test.test_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      test.test_name_ar.includes(searchQuery) ||
-      test.test_id.includes(searchQuery.toLowerCase()) ||
-      test.color_results.some(result =>
+      test.method_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      test.method_name_ar.includes(searchQuery) ||
+      test.results.some(result =>
         result.possible_substance.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        result.possible_substance_ar.includes(searchQuery)
+        result.possible_substance_ar.includes(searchQuery) ||
+        result.color_result.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        result.color_result_ar.includes(searchQuery)
       );
 
-    const matchesCategory = selectedCategory === 'all' || test.category === selectedCategory;
+    const matchesTestType = selectedTestType === 'all' || test.test_type === selectedTestType;
 
-    const matchesConfidence = selectedConfidence === 'all' ||
-      test.color_results.some(result => result.confidence_level === selectedConfidence);
-
-    return matchesSearch && matchesCategory && matchesConfidence;
+    return matchesSearch && matchesTestType;
   });
 
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'basic': return 'text-blue-600 bg-blue-50 border-blue-200';
-      case 'advanced': return 'text-purple-600 bg-purple-50 border-purple-200';
-      case 'specialized': return 'text-indigo-600 bg-indigo-50 border-indigo-200';
-      default: return 'text-gray-600 bg-gray-50 border-gray-200';
-    }
-  };
 
-  const getConfidenceLevelColor = (level: string) => {
-    switch (level) {
-      case 'very_high': return 'text-green-700 bg-green-100 border-green-300';
-      case 'high': return 'text-green-600 bg-green-50 border-green-200';
-      case 'medium': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-      case 'low': return 'text-red-600 bg-red-50 border-red-200';
-      default: return 'text-gray-600 bg-gray-50 border-gray-200';
-    }
-  };
-
-  const getCategoryName = (category: string) => {
-    const names = {
-      basic: lang === 'ar' ? 'أساسي' : 'Basic',
-      advanced: lang === 'ar' ? 'متقدم' : 'Advanced',
-      specialized: lang === 'ar' ? 'متخصص' : 'Specialized'
-    };
-    return names[category as keyof typeof names] || category;
-  };
-
-  const getConfidenceName = (level: string) => {
-    const names = {
-      very_high: lang === 'ar' ? 'عالي جداً' : 'Very High',
-      high: lang === 'ar' ? 'عالي' : 'High',
-      medium: lang === 'ar' ? 'متوسط' : 'Medium',
-      low: lang === 'ar' ? 'منخفض' : 'Low'
-    };
-    return names[level as keyof typeof names] || level;
-  };
 
   if (loading) {
     return (
@@ -191,28 +150,27 @@ export function TestsManagement({ lang }: TestsManagementProps) {
         <div className="relative">
           <FunnelIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
+            value={selectedTestType}
+            onChange={(e) => setSelectedTestType(e.target.value)}
             className="w-full pl-10 pr-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary-500"
           >
-            <option value="all">{lang === 'ar' ? 'جميع الفئات' : 'All Categories'}</option>
-            <option value="basic">{lang === 'ar' ? 'أساسي' : 'Basic'}</option>
-            <option value="advanced">{lang === 'ar' ? 'متقدم' : 'Advanced'}</option>
-            <option value="specialized">{lang === 'ar' ? 'متخصص' : 'Specialized'}</option>
+            <option value="all">{lang === 'ar' ? 'جميع أنواع الاختبارات' : 'All Test Types'}</option>
+            <option value="F/L">{lang === 'ar' ? 'F/L - فلورسنت/ضوئي' : 'F/L - Fluorescent/Light'}</option>
+            <option value="L">{lang === 'ar' ? 'L - ضوئي' : 'L - Light'}</option>
+            <option value="">{lang === 'ar' ? 'غير محدد' : 'Unspecified'}</option>
           </select>
         </div>
         <div className="relative">
           <SwatchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <select
-            value={selectedConfidence}
-            onChange={(e) => setSelectedConfidence(e.target.value)}
+            value={selectedTestType}
+            onChange={(e) => setSelectedTestType(e.target.value)}
             className="w-full pl-10 pr-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary-500"
           >
-            <option value="all">{lang === 'ar' ? 'جميع مستويات الثقة' : 'All Confidence Levels'}</option>
-            <option value="very_high">{lang === 'ar' ? 'عالي جداً' : 'Very High'}</option>
-            <option value="high">{lang === 'ar' ? 'عالي' : 'High'}</option>
-            <option value="medium">{lang === 'ar' ? 'متوسط' : 'Medium'}</option>
-            <option value="low">{lang === 'ar' ? 'منخفض' : 'Low'}</option>
+            <option value="all">{lang === 'ar' ? 'جميع أنواع الاختبارات' : 'All Test Types'}</option>
+            <option value="F/L">{lang === 'ar' ? 'F/L - فلورسنت/ضوئي' : 'F/L - Fluorescent/Light'}</option>
+            <option value="L">{lang === 'ar' ? 'L - ضوئي' : 'L - Light'}</option>
+            <option value="">{lang === 'ar' ? 'غير محدد' : 'Unspecified'}</option>
           </select>
         </div>
       </div>
@@ -226,7 +184,7 @@ export function TestsManagement({ lang }: TestsManagementProps) {
               {lang === 'ar' ? 'إجمالي الاختبارات' : 'Total Tests'}
             </span>
           </div>
-          <p className="text-2xl font-bold text-foreground mt-1">{statistics.total}</p>
+          <p className="text-2xl font-bold text-foreground mt-1">{statistics.total_tests}</p>
         </div>
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-border">
           <div className="flex items-center space-x-2 rtl:space-x-reverse">
@@ -235,25 +193,25 @@ export function TestsManagement({ lang }: TestsManagementProps) {
               {lang === 'ar' ? 'إجمالي النتائج' : 'Total Results'}
             </span>
           </div>
-          <p className="text-2xl font-bold text-foreground mt-1">{statistics.totalResults}</p>
+          <p className="text-2xl font-bold text-foreground mt-1">{statistics.total_results}</p>
         </div>
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-border">
           <div className="flex items-center space-x-2 rtl:space-x-reverse">
             <div className="w-3 h-3 rounded-full bg-green-500"></div>
             <span className="text-sm font-medium text-muted-foreground">
-              {lang === 'ar' ? 'ثقة عالية' : 'High Confidence'}
+              {lang === 'ar' ? 'المواد الفريدة' : 'Unique Substances'}
             </span>
           </div>
-          <p className="text-2xl font-bold text-foreground mt-1">{statistics.highConfidenceResults}</p>
+          <p className="text-2xl font-bold text-foreground mt-1">{statistics.unique_substances}</p>
         </div>
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-border">
           <div className="flex items-center space-x-2 rtl:space-x-reverse">
             <TagIcon className="h-5 w-5 text-purple-600" />
             <span className="text-sm font-medium text-muted-foreground">
-              {lang === 'ar' ? 'متخصصة' : 'Specialized'}
+              {lang === 'ar' ? 'الألوان الفريدة' : 'Unique Colors'}
             </span>
           </div>
-          <p className="text-2xl font-bold text-foreground mt-1">{statistics.specialized}</p>
+          <p className="text-2xl font-bold text-foreground mt-1">{statistics.unique_colors}</p>
         </div>
       </div>
 
@@ -267,13 +225,13 @@ export function TestsManagement({ lang }: TestsManagementProps) {
                   {lang === 'ar' ? 'الاختبار' : 'Test'}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  {lang === 'ar' ? 'الفئة' : 'Category'}
+                  {lang === 'ar' ? 'نوع الاختبار' : 'Test Type'}
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  {lang === 'ar' ? 'رقم الاختبار' : 'Test Number'}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   {lang === 'ar' ? 'النتائج' : 'Results'}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  {lang === 'ar' ? 'الثقة العالية' : 'High Confidence'}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   {lang === 'ar' ? 'الإجراءات' : 'Actions'}
@@ -282,25 +240,34 @@ export function TestsManagement({ lang }: TestsManagementProps) {
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {filteredTests.map((test) => (
-                <React.Fragment key={test.test_id}>
+                <React.Fragment key={test.method_name}>
                   <tr className="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-3 rtl:space-x-reverse">
                         <BeakerIcon className="h-5 w-5 text-primary-600" />
                         <div>
                           <div className="text-sm font-medium text-foreground">
-                            {lang === 'ar' ? test.test_name_ar : test.test_name}
+                            {lang === 'ar' ? test.method_name_ar : test.method_name}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {test.test_id}
+                            {test.test_number}
                           </div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getCategoryColor(test.category)}`}>
-                        {getCategoryName(test.category)}
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${
+                        test.test_type === 'F/L' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                        test.test_type === 'L' ? 'bg-green-100 text-green-800 border-green-200' :
+                        'bg-gray-100 text-gray-800 border-gray-200'
+                      }`}>
+                        {test.test_type || (lang === 'ar' ? 'غير محدد' : 'Unspecified')}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                        <span className="text-sm font-medium text-foreground">{test.test_number}</span>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-2 rtl:space-x-reverse">
@@ -310,21 +277,12 @@ export function TestsManagement({ lang }: TestsManagementProps) {
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                        <span className="text-sm font-medium text-foreground">{test.high_confidence_results}</span>
-                        <span className="text-xs text-muted-foreground">
-                          / {test.total_results}
-                        </span>
-                      </div>
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center space-x-2 rtl:space-x-reverse">
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleViewDetails(test.test_id)}
+                          onClick={() => handleViewDetails(test.method_name)}
                           className="text-blue-600 hover:text-blue-700"
                         >
                           <EyeIcon className="h-4 w-4" />
@@ -334,34 +292,57 @@ export function TestsManagement({ lang }: TestsManagementProps) {
                   </tr>
 
                   {/* Details Row */}
-                  {showDetails === test.test_id && (
+                  {showDetails === test.method_name && (
                     <tr>
                       <td colSpan={5} className="px-6 py-4 bg-gray-50 dark:bg-gray-700">
                         <div className="space-y-4">
                           <h4 className="text-sm font-medium text-foreground">
-                            {lang === 'ar' ? 'النتائج اللونية:' : 'Color Results:'}
+                            {lang === 'ar' ? 'تفاصيل الاختبار:' : 'Test Details:'}
                           </h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {test.color_results.map((result, index) => (
-                              <div key={index} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-border">
-                                <div className="flex items-center space-x-2 rtl:space-x-reverse mb-2">
-                                  <div
-                                    className="w-4 h-4 rounded-full border border-gray-300"
-                                    style={{ backgroundColor: result.color_hex }}
-                                  ></div>
-                                  <span className="text-sm font-medium text-foreground">
-                                    {lang === 'ar' ? result.color_result_ar : result.color_result}
-                                  </span>
-                                </div>
-                                <div className="text-xs text-muted-foreground mb-1">
-                                  {lang === 'ar' ? result.possible_substance_ar : result.possible_substance}
-                                </div>
-                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getConfidenceLevelColor(result.confidence_level)}`}>
-                                  {getConfidenceName(result.confidence_level)}
-                                </span>
-                              </div>
-                            ))}
+
+                          {/* Test Preparation */}
+                          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-border">
+                            <h5 className="text-sm font-semibold text-foreground mb-2">
+                              {lang === 'ar' ? 'خطوات التحضير:' : 'Preparation Steps:'}
+                            </h5>
+                            <div className="text-sm text-muted-foreground whitespace-pre-line">
+                              {lang === 'ar' ? test.prepare_ar || test.prepare : test.prepare}
+                            </div>
                           </div>
+
+                          {/* Test Results */}
+                          <div>
+                            <h5 className="text-sm font-semibold text-foreground mb-3">
+                              {lang === 'ar' ? 'النتائج المحتملة:' : 'Possible Results:'}
+                            </h5>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                              {test.results.map((result, index) => (
+                                <div key={index} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-border">
+                                  <div className="flex items-center space-x-2 rtl:space-x-reverse mb-2">
+                                    <div className="w-4 h-4 rounded-full border border-gray-300 bg-gradient-to-r from-blue-400 to-purple-500"></div>
+                                    <span className="text-sm font-medium text-foreground">
+                                      {lang === 'ar' ? result.color_result_ar || result.color_result : result.color_result}
+                                    </span>
+                                  </div>
+                                  <div className="text-xs text-muted-foreground mb-1">
+                                    {lang === 'ar' ? result.possible_substance_ar || result.possible_substance : result.possible_substance}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Reference */}
+                          {test.reference && (
+                            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                              <h5 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                                {lang === 'ar' ? 'المرجع العلمي:' : 'Scientific Reference:'}
+                              </h5>
+                              <div className="text-sm text-blue-800 dark:text-blue-200 font-mono">
+                                {test.reference}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </td>
                     </tr>

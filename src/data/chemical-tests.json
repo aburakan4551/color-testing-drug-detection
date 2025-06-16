@@ -28,7 +28,12 @@
     "preparation_time": 5,
     "icon": "BeakerIcon",
     "color_primary": "#0080FF",
-    "created_at": "2025-01-01T00:00:00Z"
+    "created_at": "2025-01-01T00:00:00Z",
+    "prepare": "1. Place a small amount of the suspected material on a spot plate.\n2. Add one drop of Mecke reagent (1g selenious acid in 100 ml concentrated sulfuric acid).\n3. Observe the resulting color.",
+    "prepare_ar": "1. ضع كمية صغيرة من المادة المشتبه بها على طبق نقطي.\n2. أضف قطرة واحدة من كاشف ميك (1 جرام حمض السيلينيوز في 100 مل حمض الكبريتيك المركز).\n3. راقب اللون الناتج.",
+    "test_type": "L",
+    "test_number": "Test 3",
+    "reference": "Rehse, K.. Arch.Pharm.(Weinheim), 302 (1969) 487."
   },
   {
     "id": "ferric-sulfate-test",
@@ -41,7 +46,12 @@
     "preparation_time": 3,
     "icon": "BeakerIcon",
     "color_primary": "#0066FF",
-    "created_at": "2025-01-01T00:00:00Z"
+    "created_at": "2025-01-01T00:00:00Z",
+    "prepare": "1. Place a small amount of the suspected material on a spot plate.\n2. Add three drops of water and smear the sample.\n3. Transfer a drop of the solution to another spot.\n4. Add one drop of reagent (5g ferric sulfate dissolved in 100 ml water).\n5. Observe the resulting color.",
+    "prepare_ar": "1. ضع كمية صغيرة من المادة المشتبه بها على طبق نقطي.\n2. أضف ثلاث قطرات من الماء وامزج العينة.\n3. انقل قطرة من المحلول إلى نقطة أخرى.\n4. أضف قطرة واحدة من الكاشف (5 جرام كبريتات الحديد مذابة في 100 مل ماء).\n5. راقب اللون الناتج.",
+    "test_type": "F/L",
+    "test_number": "Test 2",
+    "reference": "Hartke, K., Mutschler, E. (1987), p. 2603. Roth, H.J., Eger, K. (1985), p. 517."
   },
   {
     "id": "nitric-acid-test",
@@ -93,7 +103,12 @@
     "preparation_time": 5,
     "icon": "BeakerIcon",
     "color_primary": "#0066FF",
-    "created_at": "2025-01-01T00:00:00Z"
+    "created_at": "2025-01-01T00:00:00Z",
+    "prepare": "1. Place a small amount of the suspected material on a spot plate.\n2. Add one drop of cobalt thiocyanate reagent (2% cobalt chloride + 2% ammonium thiocyanate in water).\n3. Observe the blue color indicating cocaine.",
+    "prepare_ar": "1. ضع كمية صغيرة من المادة المشتبه بها على طبق نقطي.\n2. أضف قطرة واحدة من كاشف كوبالت ثيوسيانات (2% كلوريد الكوبالت + 2% ثيوسيانات الأمونيوم في الماء).\n3. راقب اللون الأزرق الذي يشير إلى الكوكايين.",
+    "test_type": "F/L",
+    "test_number": "Test 7",
+    "reference": "Clarke, E.G.C. (1986). Clarke's Isolation and Identification of Drugs, 2nd ed., The Pharmaceutical Press, London, pp. 123-125."
   },
   {
     "id": "scott-test",

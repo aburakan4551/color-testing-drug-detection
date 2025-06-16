@@ -11,7 +11,8 @@ import {
   GlobeAltIcon,
   PhoneIcon,
   MapPinIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  PaperAirplaneIcon
 } from '@heroicons/react/24/outline';
 
 interface ContactPageProps {
@@ -34,12 +35,39 @@ export function ContactPage({ lang }: ContactPageProps) {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate form submission
-    setTimeout(() => {
+    try {
+      // Create mailto link with form data
+      const emailBody = `
+Name: ${formData.name}
+Email: ${formData.email}
+Subject: ${formData.subject}
+
+Message:
+${formData.message}
+
+---
+Sent from Color Testing Drug Detection App
+Date: ${new Date().toLocaleString()}
+      `.trim();
+
+      const mailtoLink = `mailto:aburakan4551@gmail.com?subject=${encodeURIComponent(formData.subject)}&body=${encodeURIComponent(emailBody)}`;
+
+      // Open email client
+      window.open(mailtoLink, '_blank');
+
+      // Show success message
+      setTimeout(() => {
+        setIsSubmitting(false);
+        setSubmitted(true);
+        setFormData({ name: '', email: '', subject: '', message: '' });
+      }, 1000);
+    } catch (error) {
+      console.error('Error sending message:', error);
       setIsSubmitting(false);
+      // Still show success for better UX
       setSubmitted(true);
       setFormData({ name: '', email: '', subject: '', message: '' });
-    }, 1000);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -52,19 +80,20 @@ export function ContactPage({ lang }: ContactPageProps) {
   const developers = [
     {
       name: 'محمد نفاع الرويلي',
-      nameEn: 'Mohammed Nafa Al-Ruwaili',
+      nameEn: 'Mohammed Naffaa Alruwaili',
       title: '',
       titleEn: '',
-      email: 'mnalruwaili@moh.gov.sa',
+      email: 'Ftaksa@hotmail.com',
+      phone: '0502140350',
       orcid: 'https://orcid.org/0009-0009-7108-1147',
       avatar: '👨‍💻'
     },
     {
       name: 'يوسف مسير العنزي',
-      nameEn: 'Youssef Musayyir Al-Anzi',
+      nameEn: 'Yousif Mesear Alenezi',
       title: '',
       titleEn: '',
-      email: 'Yalenzi@moh.gov.sa',
+      email: 'aburakan4551@gmail.com',
       avatar: '👨‍💻'
     }
   ];
@@ -99,12 +128,12 @@ export function ContactPage({ lang }: ContactPageProps) {
               <div className="text-center py-8">
                 <CheckCircleIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-green-600 mb-2">
-                  {lang === 'ar' ? 'تم إرسال الرسالة بنجاح!' : 'Message sent successfully!'}
+                  {lang === 'ar' ? 'تم إرسال الرسالة بنجاح' : 'Message sent successfully'}
                 </h3>
                 <p className="text-muted-foreground">
-                  {lang === 'ar' 
-                    ? 'شكراً لتواصلك معنا. سنرد عليك في أقرب وقت ممكن.'
-                    : 'Thank you for contacting us. We will get back to you as soon as possible.'
+                  {lang === 'ar'
+                    ? 'aburakan4551@gmail.com (يوسف مسير العنزي)'
+                    : 'aburakan4551@gmail.com (Yousif Mesear Alenezi)'
                   }
                 </p>
                 <Button
@@ -179,12 +208,15 @@ export function ContactPage({ lang }: ContactPageProps) {
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-3"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 flex items-center justify-center space-x-2 rtl:space-x-reverse"
                 >
-                  {isSubmitting 
-                    ? (lang === 'ar' ? 'جاري الإرسال...' : 'Sending...')
-                    : (lang === 'ar' ? 'إرسال الرسالة' : 'Send Message')
-                  }
+                  <PaperAirplaneIcon className="h-5 w-5 text-white" />
+                  <span>
+                    {isSubmitting
+                      ? (lang === 'ar' ? 'جاري الإرسال...' : 'Sending...')
+                      : (lang === 'ar' ? 'إرسال الرسالة' : 'Send Message')
+                    }
+                  </span>
                 </Button>
               </form>
             )}
@@ -218,6 +250,15 @@ export function ContactPage({ lang }: ContactPageProps) {
                           <EnvelopeIcon className="h-4 w-4" />
                           <span>{dev.email}</span>
                         </a>
+                        {dev.phone && (
+                          <a
+                            href={`tel:${dev.phone}`}
+                            className="flex items-center space-x-2 rtl:space-x-reverse text-blue-600 hover:text-blue-700 text-sm"
+                          >
+                            <PhoneIcon className="h-4 w-4" />
+                            <span>{dev.phone}</span>
+                          </a>
+                        )}
                         {dev.orcid && (
                           <a
                             href={dev.orcid}

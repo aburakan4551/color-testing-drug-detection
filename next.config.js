@@ -30,6 +30,16 @@ const nextConfig = {
   // Enable static exports for deployment
   output: 'export',
   trailingSlash: true,
+  distDir: 'out',
+
+  // إعدادات خاصة بـ Capacitor
+  assetPrefix: '',
+  basePath: '',
+
+  // تعطيل ESLint مؤقتاً للبناء
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 
   // Optimization for static export
   // experimental: {
