@@ -250,5 +250,47 @@
         "test_type": "F/L",
         "test_number": "Test 32",
         "reference": "Ehrlich, P. Dtsch. Med. Wochenschr. 27 (1901) 15."
+    },
+    {
+        "id": "1-2-dinitrobenzene-test",
+        "method_name": "1,2-Dinitrobenzene Test",
+        "method_name_ar": "اختبار 1,2-ثنائي نيترو البنزين",
+        "color_result": "Moderate purple",
+        "color_result_ar": "بنفسجي متوسط",
+        "possible_substance": "Pemoline",
+        "possible_substance_ar": "البيمولين",
+        "prepare": "1. Place two drops of reagent 16A (Dissolve 1 g of 1,2-dinitrobenzene in 100 ml of polyethylene glycol) on a spot plate.\n2. Add a small amount of the suspected material.\n3. Add two drops of reagent 16B (Dissolve 10 g of lithium hydroxide in 100 ml of water).",
+        "prepare_ar": "1. ضع قطرتين من الكاشف 16A (اذب 1 جرام من 1,2-ثنائي نيترو البنزين في 100 مل من البولي إيثيلين جليكول) على طبق نقطي.\n2. أضف كمية صغيرة من المادة المشتبه بها.\n3. أضف قطرتين من الكاشف 16B (اذب 10 جرام من هيدروكسيد الليثيوم في 100 مل من الماء).",
+        "test_type": "L",
+        "test_number": "Test 33",
+        "reference": "Watanabe, K. Report of the International Symposion of Forensic Science, Tokyo (1993), p.21-24."
+    },
+    {
+        "id": "1-3-dinitrobenzene-test",
+        "method_name": "1,3-Dinitrobenzene Test",
+        "method_name_ar": "اختبار 1,3-ثنائي نيترو البنزين",
+        "color_result": "Deep red",
+        "color_result_ar": "أحمر عميق",
+        "possible_substance": "Pemoline",
+        "possible_substance_ar": "البيمولين",
+        "prepare": "1. Place two drops of reagent 16C (Dissolve 1 g of 1,3-dinitrobenzene in 100 ml of polyethylene glycol) on a spot plate.\n2. Add a small amount of the suspected material.\n3. Add two drops of reagent 16D (Dissolve 1 g of 1,4-dinitrobenzene in 100 ml of polyethylene glycol).",
+        "prepare_ar": "1. ضع قطرتين من الكاشف 16C (اذب 1 جرام من 1,3-ثنائي نيترو البنزين في 100 مل من البولي إيثيلين جليكول) على طبق نقطي.\n2. أضف كمية صغيرة من المادة المشتبه بها.\n3. أضف قطرتين من الكاشف 16D (اذب 1 جرام من 1,4-ثنائي نيترو البنزين في 100 مل من البولي إيثيلين جليكول).",
+        "test_type": "F/L",
+        "test_number": "Test 34",
+        "reference": "Watanabe, K. Report of the International Symposion of Forensic Science, Tokyo (1993), p.21-24."
+    },
+    {
+        "id": "1-4-dinitrobenzene-test",
+        "method_name": "1,4-Dinitrobenzene Test",
+        "method_name_ar": "اختبار 1,4-ثنائي نيترو البنزين",
+        "color_result": "Deep yellow",
+        "color_result_ar": "أصفر عميق",
+        "possible_substance": "Pemoline",
+        "possible_substance_ar": "البيمولين",
+        "prepare": "1. Place two drops of reagent 16D (Dissolve 1 g of 1,4-dinitrobenzene in 100 ml of polyethylene glycol) on a spot plate.\n2. Add a small amount of the suspected material.\n3. Add two drops of reagent 16B (Dissolve 10 g of lithium hydroxide in 100 ml of water).",
+        "prepare_ar": "1. ضع قطرتين من الكاشف 16D (اذب 1 جرام من 1,4-ثنائي نيترو البنزين في 100 مل من البولي إيثيلين جليكول) على طبق نقطي.\n2. أضف كمية صغيرة من المادة المشتبه بها.\n3. أضف قطرتين من الكاشف 16B (اذب 10 جرام من هيدروكسيد الليثيوم في 100 مل من الماء).",
+        "test_type": "F/L",
+        "test_number": "Test 35",
+        "reference": "Watanabe, K. Report of the International Symposion of Forensic Science, Tokyo (1993), p.21-24."
     }
 ]
