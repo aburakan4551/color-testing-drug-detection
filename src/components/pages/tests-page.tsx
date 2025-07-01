@@ -9,19 +9,23 @@ import { DataService, ChemicalTest } from '@/lib/data-service';
 import { Button } from '@/components/ui/button';
 import { TestCard } from '@/components/ui/test-card';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { TestAccessGuard } from '@/components/subscription/TestAccessGuard';
+import { AuthProvider } from '@/components/auth/AuthProvider';
 import {
   BeakerIcon,
   MagnifyingGlassIcon,
   FunnelIcon,
   ExclamationTriangleIcon,
-  ClockIcon
+  ClockIcon,
+  LockClosedIcon,
+  StarIcon
 } from '@heroicons/react/24/outline';
 
 interface TestsPageProps {
   lang: Language;
 }
 
-export function TestsPage({ lang }: TestsPageProps) {
+function TestsPageContent({ lang }: TestsPageProps) {
   const [tests, setTests] = useState<ChemicalTest[]>([]);
   const [filteredTests, setFilteredTests] = useState<ChemicalTest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -214,23 +218,62 @@ export function TestsPage({ lang }: TestsPageProps) {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredTests.map((test) => (
-              <TestCard
-                key={test.id}
-                test={test}
-                lang={lang}
-                onClick={(testId) => {
-                  // Navigate to test page
-                  console.log('Test card clicked, navigating to:', `/${lang}/tests/${testId}`);
-                  router.push(`/${lang}/tests/${testId}`);
-                }}
-              />
-            ))}
+            {filteredTests.map((test, index) => {
+              const isFreeTest = index < 5;
+
+              return (
+                <div key={test.id} className="relative">
+                  <TestAccessGuard
+                    testIndex={index}
+                    testId={test.id}
+                    testName={lang === 'ar' ? test.method_name_ar : test.method_name}
+                    onAccessGranted={() => {
+                      console.log('Test access granted, navigating to:', `/${lang}/tests/${test.id}`);
+                      router.push(`/${lang}/tests/${test.id}`);
+                    }}
+                  >
+                    <div className="relative">
+                      {/* Free/Premium Badge */}
+                      <div className="absolute top-2 right-2 z-10">
+                        {isFreeTest ? (
+                          <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center">
+                            <StarIcon className="w-3 h-3 mr-1" />
+                            {lang === 'ar' ? 'مجاني' : 'Free'}
+                          </div>
+                        ) : (
+                          <div className="bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center">
+                            <LockClosedIcon className="w-3 h-3 mr-1" />
+                            {lang === 'ar' ? 'مميز' : 'Premium'}
+                          </div>
+                        )}
+                      </div>
+
+                      <TestCard
+                        test={test}
+                        lang={lang}
+                        onClick={(testId) => {
+                          // This will be handled by TestAccessGuard
+                          console.log('Test card clicked:', testId);
+                        }}
+                      />
+                    </div>
+                  </TestAccessGuard>
+                </div>
+              );
+            })}
           </div>
         )}
 
 
       </div>
     </div>
+  );
+}
+
+export function TestsPage({ lang }: TestsPageProps) {
+  return (
+    <AuthProvider>
+      <TestsPageContent lang={lang} />
+    </AuthProvider>
   );
 }
