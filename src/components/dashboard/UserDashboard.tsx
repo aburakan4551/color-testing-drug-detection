@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { getUserUsageStats, TestUsage } from '@/lib/subscription-service';
-import { createCustomerPortalSession } from '@/lib/stripe-service';
+// import { createCustomerPortalSession } from '@/lib/tap-service'; // سيتم تنفيذه لاحقاً
 import { 
   User, 
   Crown, 
@@ -50,19 +50,18 @@ export function UserDashboard() {
   }, [user]);
 
   const handleManageSubscription = async () => {
-    if (!userProfile?.subscription?.stripeCustomerId) {
+    if (!userProfile?.subscription?.tapCustomerId) {
       setError('لا يوجد اشتراك نشط لإدارته');
       return;
     }
 
     try {
-      await createCustomerPortalSession(
-        userProfile.subscription.stripeCustomerId,
-        window.location.href
-      );
+      // Tap لا يوفر Customer Portal مثل Stripe
+      // يمكن إضافة صفحة مخصصة لإدارة الاشتراك
+      setError('إدارة الاشتراك ستكون متاحة قريباً');
     } catch (error) {
-      console.error('Error opening customer portal:', error);
-      setError('حدث خطأ في فتح لوحة إدارة الاشتراك');
+      console.error('Error managing subscription:', error);
+      setError('حدث خطأ في إدارة الاشتراك');
     }
   };
 

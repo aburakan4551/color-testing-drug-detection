@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { createCheckoutSession, SUBSCRIPTION_PLANS } from '@/lib/stripe-service';
+import { createCheckoutSession, subscriptionPlans } from '@/lib/tap-service';
 import { X, Crown, Check, Star, Zap } from 'lucide-react';
 
 interface SubscriptionModalProps {
@@ -27,15 +27,27 @@ export function SubscriptionModal({ isOpen, onClose }: SubscriptionModalProps) {
     setError('');
 
     try {
-      const successUrl = `${window.location.origin}/subscription/success`;
-      const cancelUrl = `${window.location.origin}/subscription/cancel`;
-      
-      await createCheckoutSession(
-        user.uid,
-        'price_monthly_sar', // سيتم استبدالها بـ Price ID الفعلي
-        successUrl,
-        cancelUrl
-      );
+      const response = await fetch('/api/tap/create-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.uid,
+          userEmail: user.email,
+          planId: 'premium_monthly',
+          userName: user.displayName || 'مستخدم'
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create checkout session');
+      }
+
+      const { url } = await response.json();
+
+      // توجيه المستخدم لصفحة الدفع
+      window.location.href = url;
     } catch (error: any) {
       console.error('Subscription error:', error);
       setError('حدث خطأ أثناء معالجة الاشتراك. حاول مرة أخرى.');
@@ -72,7 +84,7 @@ export function SubscriptionModal({ isOpen, onClose }: SubscriptionModalProps) {
             <div className="text-center mb-4">
               <Star className="w-12 h-12 text-gray-400 mx-auto mb-2" />
               <h3 className="text-xl font-semibold text-gray-900">
-                {SUBSCRIPTION_PLANS.free.name}
+                الخطة المجانية
               </h3>
               <div className="mt-2">
                 <span className="text-3xl font-bold text-gray-900">مجاني</span>
@@ -80,7 +92,7 @@ export function SubscriptionModal({ isOpen, onClose }: SubscriptionModalProps) {
             </div>
 
             <ul className="space-y-3 mb-6">
-              {SUBSCRIPTION_PLANS.free.features.map((feature, index) => (
+              {['أول 5 اختبارات مجانية', 'الوصول للاختبارات الأساسية', 'دعم محدود'].map((feature, index) => (
                 <li key={index} className="flex items-start">
                   <Check className="w-5 h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
                   <span className="text-gray-600">{feature}</span>
@@ -106,11 +118,11 @@ export function SubscriptionModal({ isOpen, onClose }: SubscriptionModalProps) {
             <div className="text-center mb-4">
               <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-2" />
               <h3 className="text-xl font-semibold text-gray-900">
-                {SUBSCRIPTION_PLANS.premium.name}
+                {subscriptionPlans[0].name}
               </h3>
               <div className="mt-2">
                 <span className="text-3xl font-bold text-gray-900">
-                  {SUBSCRIPTION_PLANS.premium.price}
+                  {subscriptionPlans[0].price}
                 </span>
                 <span className="text-gray-600 mr-1">ريال/شهر</span>
               </div>
@@ -120,7 +132,7 @@ export function SubscriptionModal({ isOpen, onClose }: SubscriptionModalProps) {
             </div>
 
             <ul className="space-y-3 mb-6">
-              {SUBSCRIPTION_PLANS.premium.features.map((feature, index) => (
+              {subscriptionPlans[0].features.map((feature, index) => (
                 <li key={index} className="flex items-start">
                   <Check className="w-5 h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
                   <span className="text-gray-700 font-medium">{feature}</span>

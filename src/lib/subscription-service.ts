@@ -21,8 +21,8 @@ export interface UserProfile {
   subscription?: {
     status: 'active' | 'inactive' | 'canceled' | 'past_due';
     plan: 'free' | 'premium';
-    stripeCustomerId?: string;
-    stripeSubscriptionId?: string;
+    tapCustomerId?: string;
+    tapSubscriptionId?: string;
     currentPeriodStart?: any;
     currentPeriodEnd?: any;
   };
@@ -192,4 +192,24 @@ export async function getUserUsageStats(uid: string): Promise<{
     freeTestsRemaining: Math.max(0, 5 - userProfile.usage.freeTestsUsed),
     recentTests
   };
+}
+
+// تحديث اشتراك المستخدم (للاستخدام مع Tap Webhooks)
+export async function updateUserSubscription(
+  userId: string,
+  subscriptionData: {
+    status: 'active' | 'inactive' | 'canceled' | 'past_due';
+    plan: 'free' | 'premium';
+    tapCustomerId?: string;
+    tapSubscriptionId?: string;
+    currentPeriodStart?: any;
+    currentPeriodEnd?: any;
+  }
+): Promise<void> {
+  const userRef = doc(db, 'users', userId);
+
+  await updateDoc(userRef, {
+    subscription: subscriptionData,
+    updatedAt: serverTimestamp()
+  });
 }
